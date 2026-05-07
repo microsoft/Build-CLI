@@ -119,7 +119,7 @@ npx @microsoft/events-cli refresh --event build-2026
 npx @microsoft/events-cli status
 ```
 
-The CLI caches session data locally. On first use it fetches automatically — no explicit refresh needed. Use `--json` for structured output the agent can parse directly.
+The CLI caches session data locally. On first use it fetches automatically — no explicit refresh needed. If the conversation is about a current or upcoming event, run `refresh` before searching to ensure fresh data. Use `--json` for structured output the agent can parse directly.
 
 #### CLI reference
 
