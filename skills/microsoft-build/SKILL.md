@@ -1,5 +1,5 @@
 ---
-name: microsoft-build-cli
+name: microsoft-build
 description: >-
   Your companion for Microsoft Build 2026. Helps you find sessions relevant to
   your project, discover what's new for your tech stack, scaffold projects from
