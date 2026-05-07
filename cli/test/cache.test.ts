@@ -114,10 +114,11 @@ describe('automatic cache revalidation', () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
-    await ensureCache();
+    const sessions = await ensureCache();
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await readMeta('build-2026')).toEqual(originalMeta);
+    expect(sessions.map((s) => s.event).sort()).toEqual(['build-2025', 'build-2026']);
   });
 
   it('uses conditional GET when a cached event is due for revalidation', async () => {
@@ -298,6 +299,39 @@ describe('automatic cache revalidation', () => {
         '  Remote catalog: downloaded (200 OK).\n' +
         '  JSON download: yes.\n' +
         '  Local cache: updated with 1 session.\n',
+    );
+  });
+
+  it('records failed explicit refreshes when a local cache exists', async () => {
+    await writeCachedEvent('build-2026');
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('network down'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await refresh('build-2026');
+
+    const updatedMeta = await readMeta('build-2026');
+    expect(updatedMeta?.lastCheckStatus).toBe('failed');
+    expect(updatedMeta?.consecutiveFailures).toBe(1);
+    expect(updatedMeta?.checkedAt).toBe(NOW);
+    expect(Date.parse(updatedMeta?.nextCheckAt ?? '')).toBeGreaterThan(Date.parse(NOW));
+    expect(stderrOutput()).toContain('failed: Failed to reach');
+  });
+
+  it('records failed checks when the remote returns 304 without usable metadata', async () => {
+    await writeSessionsOnly('build-2026');
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 304 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await refresh('build-2026');
+
+    const repairedMeta = await readMeta('build-2026');
+    expect(repairedMeta?.lastCheckStatus).toBe('failed');
+    expect(repairedMeta?.consecutiveFailures).toBe(1);
+    expect(repairedMeta?.checkedAt).toBe(NOW);
+    expect(Date.parse(repairedMeta?.nextCheckAt ?? '')).toBeGreaterThan(Date.parse(NOW));
+    expect(stderrOutput()).toContain(
+      'failed: https://eventtools.event.microsoft.com/build2026-prod/fallback/session-all-en-us.json ' +
+        'returned 304 without a usable local cache',
     );
   });
 });

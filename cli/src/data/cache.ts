@@ -19,6 +19,8 @@ const JITTER_RATIO = 0.2;
 export interface FetchAndCacheOptions {
   force?: boolean;
   log?: (message: string) => void;
+  cachedMeta?: CacheMeta | null;
+  cachedSessions?: Session[];
 }
 
 function cacheDir(): string {
@@ -133,20 +135,37 @@ export async function readSessions(eventId: string): Promise<Session[]> {
   }
 }
 
+function hasCachedSessions(eventId: string): boolean {
+  return existsSync(sessionsPath(eventId));
+}
+
+async function recordFetchFailure(eventId: string): Promise<void> {
+  await recordFailedCheck(eventId);
+}
+
 export async function fetchAndCache(
   event: EventConfig,
   options: FetchAndCacheOptions = {},
 ): Promise<Session[]> {
   await ensureCacheDir();
 
-  const { force = false, log } = options;
-  const existingMeta = await readMeta(event.id);
-  const existingSessions = await readSessions(event.id);
+  const { force = false, log, cachedSessions } = options;
+  const existingMeta = options.cachedMeta === undefined
+    ? await readMeta(event.id)
+    : options.cachedMeta;
+  const hasExistingSessions = cachedSessions === undefined
+    ? hasCachedSessions(event.id)
+    : cachedSessions.length > 0;
+  const cachedSessionCount = cachedSessions?.length ?? existingMeta?.sessionCount;
   const headers: Record<string, string> = {};
-  const canRevalidate = !force && existingMeta !== null && existingSessions.length > 0;
+  const canRevalidate = !force && existingMeta !== null && hasExistingSessions;
 
-  log?.(existingSessions.length > 0
-    ? `  Local cache: found ${formatSessionCount(existingSessions.length)}.\n`
+  log?.(hasExistingSessions
+    ? `  Local cache: found ${
+      cachedSessionCount === undefined
+        ? 'existing sessions'
+        : formatSessionCount(cachedSessionCount)
+    }.\n`
     : '  Local cache: missing.\n');
 
   // Conditional GET if we have prior data and not forcing
@@ -167,6 +186,7 @@ export async function fetchAndCache(
   try {
     response = await fetch(event.endpoint, { headers });
   } catch (err) {
+    await recordFetchFailure(event.id);
     throw new FetchError(
       `Failed to reach ${event.endpoint}: ${err instanceof Error ? err.message : String(err)}`,
     );
@@ -175,6 +195,16 @@ export async function fetchAndCache(
   // 304 Not Modified — cache is still fresh
   if (response.status === 304) {
     if (!canRevalidate || existingMeta === null) {
+      await recordFetchFailure(event.id);
+      throw new FetchError(
+        `${event.endpoint} returned 304 without a usable local cache`,
+        response.status,
+      );
+    }
+
+    const existingSessions = cachedSessions ?? await readSessions(event.id);
+    if (existingSessions.length === 0) {
+      await recordFetchFailure(event.id);
       throw new FetchError(
         `${event.endpoint} returned 304 without a usable local cache`,
         response.status,
@@ -198,6 +228,7 @@ export async function fetchAndCache(
 
   if (!response.ok) {
     log?.(`  Remote catalog: failed (${formatResponseStatus(response)}).\n`);
+    await recordFetchFailure(event.id);
     throw new FetchError(
       `${event.endpoint} returned ${response.status}`,
       response.status,
@@ -211,12 +242,14 @@ export async function fetchAndCache(
   try {
     raw = await response.json();
   } catch (err) {
+    await recordFetchFailure(event.id);
     throw new FetchError(
       `${event.endpoint} returned invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
   if (!Array.isArray(raw)) {
+    await recordFetchFailure(event.id);
     throw new FetchError(`${event.endpoint} returned an unexpected catalog shape`);
   }
 
@@ -240,7 +273,7 @@ export async function fetchAndCache(
 
   await writeFile(sessionsPath(event.id), JSON.stringify(sessions));
   await writeMeta(event.id, meta);
-  log?.(`  Local cache: ${existingSessions.length > 0 ? 'updated' : 'created'} with ${formatSessionCount(sessions.length)}.\n`);
+  log?.(`  Local cache: ${hasExistingSessions ? 'updated' : 'created'} with ${formatSessionCount(sessions.length)}.\n`);
 
   return sessions;
 }

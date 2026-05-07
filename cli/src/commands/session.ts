@@ -1,4 +1,3 @@
-import { getAllCachedSessions } from '../data/cache.js';
 import { buildIndex, findSession } from '../search/index.js';
 import { formatSessionDetail } from '../output/format.js';
 import { ensureCache } from './common.js';
@@ -7,8 +6,7 @@ export async function session(
   code: string,
   opts: { event?: string; json?: boolean },
 ): Promise<void> {
-  await ensureCache();
-  const all = await getAllCachedSessions();
+  const all = await ensureCache();
   buildIndex(all);
 
   const matches = findSession(code, opts.event);
