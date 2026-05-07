@@ -26,7 +26,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pdebruin/microsoft-events-skill.git",
+    "url": "git+https://github.com/microsoft/Build-CLI.git",
     "directory": "cli"
   },
   "engines": {
