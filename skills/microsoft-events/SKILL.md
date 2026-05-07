@@ -98,7 +98,7 @@ The msevents CLI fetches, caches, indexes, and searches the session catalog loca
 
 ```sh
 # Search by keyword
-npx @microsoft/events-cli sessions --query "Azure AI Foundry" --event build-2026 --json
+npx @microsoft/events-cli sessions --query "Microsoft Foundry" --event build-2026 --json
 
 # Search by technology (matches product, tags, topic, languages, title, description)
 npx @microsoft/events-cli sessions --tech "Azure Cosmos DB" --event build-2026 --json
@@ -107,7 +107,7 @@ npx @microsoft/events-cli sessions --tech "Azure Cosmos DB" --event build-2026 -
 npx @microsoft/events-cli sessions --speaker "Scott Hanselman" --event build-2026 --json
 
 # Combine filters
-npx @microsoft/events-cli sessions --tech "Azure AI Foundry" --speaker "Yina Arenas" --event build-2026 --json
+npx @microsoft/events-cli sessions --tech "Microsoft Foundry" --speaker "Yina Arenas" --event build-2026 --json
 
 # Look up a specific session by code
 npx @microsoft/events-cli session BRK155 --json
@@ -348,7 +348,7 @@ The user just attended or watched a session and wants next steps.
    - **Without CLI**: Fetch the catalog and find by code or title
 2. Check the `relatedSessionCodes` field first — use those if populated
 3. Build a response with up to three sections:
-   - **Start building**: search Learn MCP for quickstarts and tutorials matching the session's tech. Frame around what was covered: "In BRK241 you heard about the Foundry Agent Service. Here's how to build your first agent..."
+   - **Start building**: surface the session's next-step link first (this points to either the session's GitHub repo or the Build next-steps site). Then search Learn MCP for quickstarts and tutorials matching the session's tech. Frame around what was covered: "In BRK241 you heard about the Foundry Agent Service. Here's how to build your first agent..."
    - **Go deeper**: related documentation, API references, architecture guides for the session's technologies
    - **Next sessions**: find related sessions via `relatedSessionCodes`, same `topic`, or same `product`/`tags`. Suggest a progression: if they saw a breakout, suggest the hands-on lab; if they did a lab, suggest the advanced breakout.
 4. If Learn MCP is unavailable, suggest specific search terms on learn.microsoft.com rather than generic "check the docs"
