@@ -9,6 +9,14 @@ import {
 import type { Session } from '../contracts.js';
 import { FetchError } from '../errors.js';
 
+export function validateEventId(eventId: string): boolean {
+  if (KNOWN_EVENTS.some((e) => e.id === eventId)) return true;
+  console.error(`Unknown event: ${eventId}`);
+  console.error(`Known events: ${KNOWN_EVENTS.map((e) => e.id).join(', ')}`);
+  process.exitCode = 1;
+  return false;
+}
+
 export async function ensureCache(): Promise<Session[]> {
   let missingCacheHeaderPrinted = false;
   const availableSessions: Session[] = [];

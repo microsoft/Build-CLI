@@ -5,6 +5,7 @@ import { refresh } from './commands/refresh.js';
 import { sessions } from './commands/sessions.js';
 import { session } from './commands/session.js';
 import { status } from './commands/status.js';
+import { validateEventId } from './commands/common.js';
 
 const program = new Command();
 
@@ -19,6 +20,7 @@ program
   .option('--event <id>', 'Check a specific event (e.g., build-2025)')
   .option('--force', 'Bypass conditional revalidation and re-fetch', false)
   .action(async (opts: { event?: string; force: boolean }) => {
+    if (opts.event && !validateEventId(opts.event)) return;
     await refresh(opts.event, opts.force);
   });
 
@@ -46,6 +48,7 @@ program
       process.exitCode = 1;
       return;
     }
+    if (opts.event && !validateEventId(opts.event)) return;
     await sessions({ ...opts, limit: parseInt(opts.limit, 10) });
   });
 
@@ -55,6 +58,7 @@ program
   .option('--event <id>', 'Scope to a specific event')
   .option('--json', 'Output as JSON', false)
   .action(async (code: string, opts: { event?: string; json: boolean }) => {
+    if (opts.event && !validateEventId(opts.event)) return;
     await session(code, opts);
   });
 
