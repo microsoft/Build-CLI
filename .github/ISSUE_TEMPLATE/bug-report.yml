@@ -1,0 +1,74 @@
+name: 🐛 Bug Report
+description: Something isn't working as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this! Please fill in what you can — any detail helps us reproduce and fix the issue.
+
+        ⚠️ **Do not include API keys, tokens, or other credentials in your report.** This is a public repo.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what you were trying to do and what went wrong.
+      placeholder: "I asked the skill to find sessions about AI agents, but it returned an error..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead?
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: If possible, list the steps to reproduce the issue.
+      placeholder: |
+        1. Run `/plugin install microsoft/Build-CLI`
+        2. Ask "find sessions about..."
+        3. See error
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Windows 11, macOS 15, Ubuntu 24.04..."
+    validations:
+      required: false
+
+  - type: input
+    id: cli-version
+    attributes:
+      label: GitHub Copilot CLI version
+      description: Run `copilot --version` to find this.
+      placeholder: "1.0.x"
+    validations:
+      required: false
+
+  - type: input
+    id: last-install
+    attributes:
+      label: When did you last install/update the plugin?
+      description: The plugin doesn't auto-update. If it's been a while, try re-running `/plugin install microsoft/Build-CLI` first.
+      placeholder: "Today, last week, not sure..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might help (screenshots, error messages, etc.)
+    validations:
+      required: false

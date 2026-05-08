@@ -1,0 +1,56 @@
+name: 🎯 Skill Suggestion
+description: The skill should handle something differently
+title: "[Skill]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The Build skill uses natural language, so results can vary. If it handled your request poorly, let us know — this helps us tune the experience.
+
+        ⚠️ **Do not include API keys, tokens, or other credentials in your report.** This is a public repo.
+
+  - type: textarea
+    id: prompt-used
+    attributes:
+      label: What did you ask?
+      description: Paste or describe the prompt you gave the skill.
+      placeholder: "Find me sessions about building agents with Semantic Kernel"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What did it do?
+      description: Describe the response you got.
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-expected
+    attributes:
+      label: What should it have done?
+      description: What would a good response look like?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Session search / discovery
+        - Scaffolding / repo setup
+        - Schedule planning
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might help (e.g., which sessions you expected to see).
+    validations:
+      required: false
