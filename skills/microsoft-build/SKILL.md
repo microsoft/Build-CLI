@@ -138,6 +138,16 @@ The CLI caches session data locally. On first use it fetches automatically — n
 | | `--force` | Bypass cache, re-fetch unconditionally |
 | `status` | `--json` | Output as JSON |
 
+### CLI search behavior
+
+The CLI does keyword matching, not semantic search. Agents should be aware of these behaviors:
+
+- **Multi-word queries match words independently** (OR-like, not phrase). `"infrastructure as code"` also matches "infrastructure" or "code" alone. Prefer `--tech "Bicep"` over multi-word phrases.
+- **No synonym expansion.** "frontend" returns nothing — try "web" or "Blazor". Always try alternative terms before concluding no sessions exist.
+- **Expand acronyms.** "K8s" works but "OTel" misses "OpenTelemetry" and "IaC" misses Bicep/Terraform sessions.
+- **Ranking degrades after top ~3 results.** Use `--limit 15` to compensate for duplicate lab slots (-R1/-R2) consuming result slots. Validate lower-ranked results before recommending.
+- **`--tech` has higher precision than `--query`** — it matches structured metadata (product, tags, topic). Use `--tech` for known product names, `--query` for concepts and topics. Use both for broad searches.
+
 ### Fallback: direct HTTP fetch
 
 If the CLI is not available (not installed, npx fails), fall back to fetching the session catalog directly:
