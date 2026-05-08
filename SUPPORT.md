@@ -6,11 +6,11 @@ This is the Microsoft Build CLI skill for GitHub Copilot CLI. It helps you disco
 
 ### Questions and general discussion
 
-Head to [Discussions](/discussions) — the community and maintainers are there to help.
+Head to [Discussions](discussions) — the community and maintainers are there to help.
 
 ### Bugs and feature requests
 
-Use [Issues](/issues/new/choose) to report problems or suggest improvements. We have templates to help you provide the right information.
+Use [Issues](issues/new/choose) to report problems or suggest improvements. We have templates to help you provide the right information.
 
 ### Quick troubleshooting
 

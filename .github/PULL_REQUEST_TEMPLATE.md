@@ -6,7 +6,7 @@
 
 This project is maintained by a small team for Microsoft Build. We may not be able to review or accept all contributions — but we appreciate the effort!
 
-**Before submitting a PR, consider opening an [issue](/issues/new/choose) or [discussion](/discussions) first.** This helps us align on direction before you invest time in code.
+**Before submitting a PR, consider opening an [issue](issues/new/choose) or [discussion](discussions) first.** This helps us align on direction before you invest time in code.
 
 ## Checklist
 

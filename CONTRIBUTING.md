@@ -2,9 +2,9 @@
 
 Thank you for your interest in improving the Build CLI skill! The best ways to contribute are:
 
-- **Report issues** — Found a bug or unexpected behavior? [Open an issue](/issues/new/choose).
-- **Suggest skill improvements** — If the skill handled your prompt poorly, use the [Skill Suggestion](/issues/new?template=skill-suggestion.yml) template to tell us what happened and what you expected.
-- **Join the discussion** — Have an idea or question? Start a thread in [Discussions](/discussions).
+- **Report issues** — Found a bug or unexpected behavior? [Open an issue](issues/new/choose).
+- **Suggest skill improvements** — If the skill handled your prompt poorly, use the [Skill Suggestion](issues/new?template=skill-suggestion.yml) template to tell us what happened and what you expected.
+- **Join the discussion** — Have an idea or question? Start a thread in [Discussions](discussions).
 
 Pull requests are welcome for bug fixes and documentation improvements. For larger changes, please open an issue first so we can discuss the approach.
 
