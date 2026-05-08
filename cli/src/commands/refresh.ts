@@ -1,8 +1,11 @@
 import { KNOWN_EVENTS } from '../config.js';
 import { fetchAndCache } from '../data/cache.js';
 import { FetchError } from '../errors.js';
+import { validateEventId } from './common.js';
 
 export async function refresh(eventFilter?: string, force: boolean = false): Promise<void> {
+  if (eventFilter && !validateEventId(eventFilter)) return;
+
   const events = eventFilter
     ? KNOWN_EVENTS.filter((e) => e.id === eventFilter)
     : KNOWN_EVENTS;
