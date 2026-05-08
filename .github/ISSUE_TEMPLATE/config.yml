@@ -8,4 +8,4 @@ contact_links:
     about: Share thoughts, ideas, or just say hi
   - name: 🔒 Report a security vulnerability
     url: https://aka.ms/SECURITY.md
-    about: Do not open a public issue — report security concerns through Microsoft's MSRC portal
+    about: Do not open a public issue — follow Microsoft's security reporting guidance
