@@ -17,11 +17,14 @@ export function validateEventId(eventId: string): boolean {
   return false;
 }
 
-export async function ensureCache(): Promise<Session[]> {
+export async function ensureCache(eventFilter?: string): Promise<Session[]> {
   let missingCacheHeaderPrinted = false;
   const availableSessions: Session[] = [];
+  const events = eventFilter
+    ? KNOWN_EVENTS.filter((event) => event.id === eventFilter)
+    : KNOWN_EVENTS;
 
-  for (const event of KNOWN_EVENTS) {
+  for (const event of events) {
     const cachedSessions = await readSessions(event.id);
     const meta = await readMeta(event.id);
     const isMissingCache = cachedSessions.length === 0;
@@ -64,5 +67,7 @@ export async function ensureCache(): Promise<Session[]> {
 
   return availableSessions.length > 0
     ? availableSessions
-    : getAllCachedSessions();
+    : eventFilter
+      ? readSessions(eventFilter)
+      : getAllCachedSessions();
 }

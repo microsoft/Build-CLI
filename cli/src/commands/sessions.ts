@@ -1,9 +1,10 @@
 import { buildIndex, searchSessions, type SearchOptions } from '../search/index.js';
 import { formatSearchResults } from '../output/format.js';
-import { ensureCache } from './common.js';
+import { ensureCache, validateEventId } from './common.js';
 
 export async function sessions(opts: SearchOptions & { json?: boolean }): Promise<void> {
-  const all = await ensureCache();
+  if (opts.event && !validateEventId(opts.event)) return;
+  const all = await ensureCache(opts.event);
   buildIndex(all);
 
   const results = searchSessions(opts);

@@ -12,6 +12,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "smoke:fixture": "node scripts/smoke-fixture.mjs",
+    "smoke:live": "node scripts/smoke-live.mjs",
     "test": "vitest run"
   },
   "keywords": [

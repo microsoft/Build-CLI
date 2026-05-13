@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -232,6 +233,92 @@ describe('automatic cache revalidation', () => {
       await readFile(join(cacheDir, 'build-2026-sessions.json'), 'utf-8'),
     ) as Session[];
     expect(cachedJson[0]?.event).toBe('build-2026');
+  });
+
+  it('uses an existing scoped cache without checking other events', async () => {
+    await writeCachedEvent('build-2026', {}, 'BRK202');
+    const originalMeta = await readMeta('build-2026');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const sessions = await ensureCache('build-2026');
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(sessions.map((s) => s.sessionCode)).toEqual(['BRK202']);
+    expect(await readMeta('build-2026')).toEqual(originalMeta);
+    expect(existsSync(join(cacheDir, 'build-2025-sessions.json'))).toBe(false);
+    expect(existsSync(join(cacheDir, 'ignite-2025-sessions.json'))).toBe(false);
+  });
+
+  it('fetches a different scoped event without refreshing an existing scoped cache', async () => {
+    await writeCachedEvent('build-2026', {}, 'BRK202');
+    const originalBuild2026Meta = await readMeta('build-2026');
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
+      [{ sessionCode: 'BRK101', title: 'Build 2025 session' }],
+      { etag: '"2025"', 'last-modified': 'Thu, 07 May 2026 02:55:00 GMT' },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const sessions = await ensureCache('build-2025');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://aka.ms/build2025-session-info');
+    expect(sessions.map((s) => s.sessionCode)).toEqual(['BRK101']);
+    expect(await readMeta('build-2026')).toEqual(originalBuild2026Meta);
+    expect(existsSync(join(cacheDir, 'ignite-2025-sessions.json'))).toBe(false);
+  });
+
+  it('reuses existing caches and fetches missing caches when loading all events', async () => {
+    await writeCachedEvent('build-2026', {}, 'BRK202');
+    const originalBuild2026Meta = await readMeta('build-2026');
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(
+        [{ sessionCode: 'BRK101', title: 'Build 2025 session' }],
+        { etag: '"2025"', 'last-modified': 'Thu, 07 May 2026 02:55:00 GMT' },
+      ))
+      .mockResolvedValueOnce(jsonResponse(
+        [{ sessionCode: 'IGN301', title: 'Ignite 2025 session' }],
+        { etag: '"ign2025"', 'last-modified': 'Thu, 07 May 2026 02:55:30 GMT' },
+      ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const sessions = await ensureCache();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      'https://aka.ms/build2025-session-info',
+      'https://aka.ms/ignite2025-session-info',
+    ]);
+    expect(sessions.map((s) => s.sessionCode).sort()).toEqual(['BRK101', 'BRK202', 'IGN301']);
+    expect(await readMeta('build-2026')).toEqual(originalBuild2026Meta);
+  });
+
+  it('fetches only the requested event when cache loading is scoped', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
+      [{ sessionCode: 'BRK202', title: 'Build 2026 session' }],
+      { etag: '"2026"', 'last-modified': 'Thu, 07 May 2026 02:56:00 GMT' },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const sessions = await ensureCache('build-2026');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://aka.ms/build2026-session-info');
+    expect(sessions.map((s) => s.event)).toEqual(['build-2026']);
+    expect(existsSync(join(cacheDir, 'build-2026-sessions.json'))).toBe(true);
+    expect(existsSync(join(cacheDir, 'build-2025-sessions.json'))).toBe(false);
+    expect(existsSync(join(cacheDir, 'ignite-2025-sessions.json'))).toBe(false);
+  });
+
+  it('does not fall back to unrelated cached events when scoped cache loading fails', async () => {
+    await writeCachedEvent('build-2025');
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('network down'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const sessions = await ensureCache('build-2026');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sessions).toEqual([]);
   });
 
   it('reports unchanged refreshes when the remote catalog returns 304', async () => {
