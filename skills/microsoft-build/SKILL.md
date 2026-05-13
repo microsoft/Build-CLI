@@ -39,7 +39,7 @@ allowed-tools: microsoft_docs_search microsoft_docs_fetch microsoft_code_sample_
 | Location | San Francisco, CA |
 | Timezone | Pacific Daylight Time (PDT, UTC-7) |
 | Catalog endpoint | `https://aka.ms/build2026-session-info` |
-| Book of News | `https://news.microsoft.com/build-2026-book-of-news/` |
+| Book of News | `https://aka.ms/build2026-news` |
 | Default CLI flag | `--event build-2026` |
 
 ### Supported events
