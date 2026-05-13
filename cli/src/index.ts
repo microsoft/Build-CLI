@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs';
 import { Command } from 'commander';
 import { refresh } from './commands/refresh.js';
 import { sessions } from './commands/sessions.js';
@@ -10,12 +11,30 @@ import { KNOWN_EVENTS } from './config.js';
 
 const knownIds = KNOWN_EVENTS.map((e) => e.id).join(', ');
 
+function readPackageVersion(): string {
+  const packageJson: unknown = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf-8'),
+  );
+
+  if (
+    typeof packageJson !== 'object'
+    || packageJson === null
+    || !('version' in packageJson)
+    || typeof packageJson.version !== 'string'
+    || packageJson.version.length === 0
+  ) {
+    throw new Error('Expected package.json to define a string version');
+  }
+
+  return packageJson.version;
+}
+
 const program = new Command();
 
 program
   .name('msevents')
   .description('Search Microsoft flagship event sessions (Build, Ignite)')
-  .version('0.1.0')
+  .version(readPackageVersion())
   .addHelpText('after', `
 Run "msevents status" to see available events and cache freshness.
 Use --json on any command for structured output (recommended for scripts and agents).`);
