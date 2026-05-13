@@ -2,10 +2,13 @@ import { execFile } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { normalizeCatalog } from '../dist/data/normalize.js';
 
 const execFileAsync = promisify(execFile);
+const cliRoot = fileURLToPath(new URL('..', import.meta.url));
+const commandTimeoutMs = 60_000;
 const eventId = 'build-2025';
 
 function assert(condition, message) {
@@ -14,8 +17,9 @@ function assert(condition, message) {
 
 async function runCli(args, cacheDir) {
   return execFileAsync(process.execPath, ['dist/index.js', ...args], {
-    cwd: new URL('..', import.meta.url),
+    cwd: cliRoot,
     env: { ...process.env, MSEVENTS_CACHE_DIR: cacheDir },
+    timeout: commandTimeoutMs,
   });
 }
 

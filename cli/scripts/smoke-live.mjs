@@ -2,9 +2,14 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
+const cliRoot = fileURLToPath(new URL('..', import.meta.url));
+const commandTimeoutMs = 60_000;
+const liveRefreshAttempts = 3;
+const liveRefreshRetryDelayMs = 5_000;
 const eventId = 'build-2026';
 
 function assert(condition, message) {
@@ -13,15 +18,50 @@ function assert(condition, message) {
 
 async function runCli(args, cacheDir) {
   return execFileAsync(process.execPath, ['dist/index.js', ...args], {
-    cwd: new URL('..', import.meta.url),
+    cwd: cliRoot,
     env: { ...process.env, MSEVENTS_CACHE_DIR: cacheDir },
+    timeout: commandTimeoutMs,
   });
+}
+
+function formatError(error) {
+  if (error && typeof error === 'object') {
+    const message = error.message ?? String(error);
+    const stderr = error.stderr ? `\n${error.stderr}` : '';
+    return `${message}${stderr}`;
+  }
+  return String(error);
+}
+
+async function delay(ms) {
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function retryLiveRefresh(cacheDir) {
+  let lastError;
+  for (let attempt = 1; attempt <= liveRefreshAttempts; attempt += 1) {
+    try {
+      return await runCli(['refresh', '--event', eventId, '--force'], cacheDir);
+    } catch (error) {
+      lastError = error;
+      if (attempt === liveRefreshAttempts) break;
+      process.stderr.write(
+        `Live catalog refresh failed on attempt ${attempt}/${liveRefreshAttempts}: ${formatError(error)}\n` +
+        `Retrying in ${liveRefreshRetryDelayMs / 1000}s...\n`,
+      );
+      await delay(liveRefreshRetryDelayMs);
+    }
+  }
+
+  throw lastError;
 }
 
 const cacheDir = await mkdtemp(join(tmpdir(), 'msevents-live-smoke-'));
 
 try {
-  const refresh = await runCli(['refresh', '--event', eventId, '--force'], cacheDir);
+  const refresh = await retryLiveRefresh(cacheDir);
   process.stderr.write(refresh.stderr);
 
   const { stdout: statusStdout } = await runCli(['status', '--json'], cacheDir);
