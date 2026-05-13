@@ -255,7 +255,7 @@ The user wants a personalized event schedule based on their projects or interest
    - Directly relevant: sessions about technologies in their active project
    - Adjacent: sessions about complementary technologies or next-step capabilities
    - Exploratory: sessions that expand their toolkit in a useful direction
-6. For each recommended session, include: session code, title, one-line reason it's relevant, type (lab/breakout/demo), level, time slot, location
+6. For each recommended session, include: session code, title, one-line reason it's relevant, speaker(s), location, time slot, type (lab/breakout/demo), level
 7. If they have time for multiple sessions, suggest a learning path order: foundational first, then intermediate/advanced, ending with hands-on labs to apply what they learned
 8. After helping the user build a schedule (finding sessions, flagging conflicts), offer: "Would you like me to save this as a markdown file?" Do not create a file until the user confirms. Include day, time, session code, title, and location.
 
@@ -267,10 +267,14 @@ Based on your project (Node.js, Azure Functions, Cosmos DB):
 
 1. **BRK223** — From rows to reasoning: Designing databases for AI apps and agents
    📌 Relevant: You use Cosmos DB in /api/data
+   🎤 Mark Smith  |  📍 Room 151  |  Jun 2, 3:45 PM PDT
+   Breakout · Level 300
    🔗 https://build.microsoft.com/sessions/BRK223
 
 2. **LAB511** — Create advanced Postgres-powered agentic apps with Azure HorizonDB
    📌 Relevant: Your requirements.txt includes psycopg2
+   🎤 Jane Doe  |  📍 Hall B  |  Jun 3, 9:00 AM PDT
+   Lab · Level 200
    🔗 https://build.microsoft.com/sessions/LAB511
 ```
 
