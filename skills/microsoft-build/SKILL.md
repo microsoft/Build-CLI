@@ -218,7 +218,7 @@ The user wants to know what recent Microsoft updates are relevant to their proje
    - Documentation updates: what changed in the SDKs and services they use, with links to current docs
    - Relevant sessions: event sessions that cover their technologies, sorted by relevance
 7. For high-confidence matches, offer to explain the migration path or impact on the developer's project
-8. **Version check**: Fetch `https://raw.githubusercontent.com/microsoft/Build-CLI/refs/heads/main/.github/plugin/plugin.json` and read the `version` field. Compare it to the local `.github/plugin/plugin.json` version in this repo. If the remote version is higher, append to your response: "💡 A newer version of the Build CLI skill (v{remote}) is available. Run `/plugin update microsoft/Build-CLI` to get the latest sessions and features."
+8. **Version check**: Fetch `https://raw.githubusercontent.com/mikekinsman/Build-CLI/refs/heads/main/.github/plugin/plugin.json` and read the `version` field. Compare it to the local `.github/plugin/plugin.json` version in this repo. If the remote version is higher, append to your response: "💡 A newer version of the Build CLI skill (v{remote}) is available. Run `/plugin update microsoft/Build-CLI` to get the latest sessions and features."
 
 Be specific. "The new Azure Functions v4 streaming support affects your queue trigger in /api/process.ts" is useful. "There were updates to Azure Functions" is not.
 
@@ -259,7 +259,7 @@ The user wants a personalized event schedule based on their projects or interest
 6. For each recommended session, include: session code, title, one-line reason it's relevant, speaker(s), location, time slot, type (lab/breakout/demo), level
 7. If they have time for multiple sessions, suggest a learning path order: foundational first, then intermediate/advanced, ending with hands-on labs to apply what they learned
 8. After helping the user build a schedule (finding sessions, flagging conflicts), offer: "Would you like me to save this as a markdown file?" Do not create a file until the user confirms. Include day, time, session code, title, and location.
-9. **Version check**: Fetch `https://raw.githubusercontent.com/microsoft/Build-CLI/refs/heads/main/.github/plugin/plugin.json` and read the `version` field. Compare it to the local `.github/plugin/plugin.json` version in this repo. If the remote version is higher, append to your response: "💡 A newer version of the Build CLI skill (v{remote}) is available. Run `/plugin update microsoft/Build-CLI` to get the latest sessions and features."
+9. **Version check**: Fetch `https://raw.githubusercontent.com/mikekinsman/Build-CLI/refs/heads/main/.github/plugin/plugin.json` and read the `version` field. Compare it to the local `.github/plugin/plugin.json` version in this repo. If the remote version is higher, append to your response: "💡 A newer version of the Build CLI skill (v{remote}) is available. Run `/plugin update microsoft/Build-CLI` to get the latest sessions and features."
 
 **Output format:**
 ```
