@@ -1,0 +1,31 @@
+{
+  "name": "microsoft-events",
+  "description": "Connect your project to Microsoft Build and Ignite sessions — discover relevant talks, explore what's new for your stack, and plan next steps from your development environment.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Microsoft"
+  },
+  "homepage": "https://github.com/microsoft/Build-CLI",
+  "repository": "https://github.com/microsoft/Build-CLI",
+  "license": "Apache-2.0",
+  "keywords": ["microsoft", "build", "ignite", "events", "sessions", "learn"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Microsoft Events",
+    "shortDescription": "Discover Microsoft Build and Ignite sessions relevant to your project.",
+    "longDescription": "Connect your project to Microsoft Build and Ignite sessions — discover relevant talks, explore what's new for your stack, and plan next steps from your development environment.",
+    "developerName": "Microsoft",
+    "category": "Productivity",
+    "capabilities": ["Research", "Reference"],
+    "websiteURL": "https://github.com/microsoft/Build-CLI",
+    "privacyPolicyURL": "https://privacy.microsoft.com/privacystatement",
+    "termsOfServiceURL": "https://www.microsoft.com/servicesagreement",
+    "defaultPrompt": [
+      "What Build sessions are relevant to my project?",
+      "What's new at Build for Azure Cosmos DB?",
+      "Tell me about session BRK155"
+    ],
+    "brandColor": "#0078D4"
+  }
+}
