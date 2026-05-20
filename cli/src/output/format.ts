@@ -1,17 +1,18 @@
 import type { Session, SearchResult, CacheMeta } from '../contracts.js';
+import { stripControlSequences as S } from '../data/sanitize.js';
 
 export function formatSessionShort(s: Session): string {
-  const parts = [`[${s.sessionCode}] ${s.title}`];
-  parts.push(`  Type: ${s.type || 'N/A'} | Level: ${s.level || 'N/A'} | Event: ${s.event}`);
-  if (s.speakers) parts.push(`  Speaker(s): ${s.speakers}`);
+  const parts = [`[${S(s.sessionCode)}] ${S(s.title)}`];
+  parts.push(`  Type: ${S(s.type) || 'N/A'} | Level: ${S(s.level) || 'N/A'} | Event: ${S(s.event)}`);
+  if (s.speakers) parts.push(`  Speaker(s): ${S(s.speakers)}`);
   if (s.startDateTime) {
     const d = new Date(s.startDateTime);
     const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    parts.push(`  When: ${date}, ${s.timeSlot || d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
+    parts.push(`  When: ${date}, ${S(s.timeSlot) || d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
   } else if (s.timeSlot) {
-    parts.push(`  When: ${s.timeSlot}`);
+    parts.push(`  When: ${S(s.timeSlot)}`);
   }
-  if (s.location) parts.push(`  Location: ${s.location}`);
+  if (s.location) parts.push(`  Location: ${S(s.location)}`);
   const links = [];
   if (s.onDemand) links.push('On-demand');
   if (s.slideDeck) links.push('Slides');
@@ -21,27 +22,27 @@ export function formatSessionShort(s: Session): string {
 
 export function formatSessionFull(s: Session): string {
   const lines = [
-    `# [${s.sessionCode}] ${s.title}`,
+    `# [${S(s.sessionCode)}] ${S(s.title)}`,
     '',
-    `Type: ${s.type || 'N/A'}`,
-    `Level: ${s.level || 'N/A'}`,
-    `Event: ${s.event}`,
+    `Type: ${S(s.type) || 'N/A'}`,
+    `Level: ${S(s.level) || 'N/A'}`,
+    `Event: ${S(s.event)}`,
   ];
-  if (s.speakers) lines.push(`Speaker(s): ${s.speakers}`);
-  if (s.timeSlot) lines.push(`When: ${s.timeSlot}`);
-  if (s.startDateTime) lines.push(`Start: ${s.startDateTime}`);
-  if (s.endDateTime) lines.push(`End: ${s.endDateTime}`);
-  if (s.location) lines.push(`Location: ${s.location}`);
-  if (s.topic) lines.push(`Topic: ${s.topic}`);
-  if (s.solutionArea) lines.push(`Solution area: ${s.solutionArea}`);
-  if (s.product) lines.push(`Product: ${s.product}`);
-  if (s.languages) lines.push(`Languages: ${s.languages}`);
-  if (s.tags) lines.push(`Tags: ${s.tags}`);
-  if (s.relatedSessionCodes) lines.push(`Related sessions: ${s.relatedSessionCodes}`);
+  if (s.speakers) lines.push(`Speaker(s): ${S(s.speakers)}`);
+  if (s.timeSlot) lines.push(`When: ${S(s.timeSlot)}`);
+  if (s.startDateTime) lines.push(`Start: ${S(s.startDateTime)}`);
+  if (s.endDateTime) lines.push(`End: ${S(s.endDateTime)}`);
+  if (s.location) lines.push(`Location: ${S(s.location)}`);
+  if (s.topic) lines.push(`Topic: ${S(s.topic)}`);
+  if (s.solutionArea) lines.push(`Solution area: ${S(s.solutionArea)}`);
+  if (s.product) lines.push(`Product: ${S(s.product)}`);
+  if (s.languages) lines.push(`Languages: ${S(s.languages)}`);
+  if (s.tags) lines.push(`Tags: ${S(s.tags)}`);
+  if (s.relatedSessionCodes) lines.push(`Related sessions: ${S(s.relatedSessionCodes)}`);
   lines.push('');
-  if (s.description) lines.push(s.description);
-  if (s.onDemand) lines.push(`\nOn-demand: ${s.onDemand}`);
-  if (s.slideDeck) lines.push(`Slides: ${s.slideDeck}`);
+  if (s.description) lines.push(S(s.description));
+  if (s.onDemand) lines.push(`\nOn-demand: ${S(s.onDemand)}`);
+  if (s.slideDeck) lines.push(`Slides: ${S(s.slideDeck)}`);
   return lines.join('\n');
 }
 

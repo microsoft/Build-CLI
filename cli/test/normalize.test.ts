@@ -86,3 +86,54 @@ describe('normalizeCatalog', () => {
     expect(lab344variants.length).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('normalize hardening', () => {
+  it('strips ANSI escape sequences from title and description', () => {
+    const session = normalizeSession({
+      sessionCode: 'BRK999',
+      title: '\x1B[31mEvil\x1B[0m Title',
+      description: 'Hello\x1B]52;c;PWNED\x07 world',
+    } as RawSession, 'build-2026');
+    expect(session!.title).toBe('Evil Title');
+    expect(session!.description).toBe('Hello world');
+  });
+
+  it('caps oversized fields at 64 KB', () => {
+    const huge = 'a'.repeat(200_000);
+    const session = normalizeSession({
+      sessionCode: 'BRK999',
+      description: huge,
+    } as RawSession, 'x');
+    expect(session!.description.length).toBe(64 * 1024);
+  });
+
+  it('rejects malformed session codes', () => {
+    expect(normalizeSession({ sessionCode: '../../etc/passwd' } as RawSession, 'x'))
+      .toBeNull();
+    expect(normalizeSession({ sessionCode: 'a b' } as RawSession, 'x'))
+      .toBeNull();
+    expect(normalizeSession({ sessionCode: '' } as RawSession, 'x'))
+      .toBeNull();
+  });
+
+  it('accepts canonical session codes', () => {
+    for (const code of ['BRK155', 'LAB329-R1', 'KEY01', 'DEM310']) {
+      const s = normalizeSession({ sessionCode: code } as RawSession, 'x');
+      expect(s?.sessionCode).toBe(code);
+    }
+  });
+
+  it('does not honour prototype-chain displayValue', () => {
+    try {
+      // eslint-disable-next-line no-extend-native
+      (Object.prototype as Record<string, unknown>).displayValue = 'pwned';
+      const session = normalizeSession({
+        sessionCode: 'BRK999',
+        location: {} as never,
+      } as RawSession, 'x');
+      expect(session!.location).toBe('');
+    } finally {
+      delete (Object.prototype as Record<string, unknown>).displayValue;
+    }
+  });
+});

@@ -1,17 +1,27 @@
 import type { RawSession, Session } from '../contracts.js';
+import { stripControlSequences } from './sanitize.js';
 
-function stringifyDisplayValue(value: unknown): string {
+const MAX_FIELD_LEN = 64 * 1024;
+const SESSION_CODE_RE = /^[A-Z0-9][A-Z0-9_.-]{0,32}$/i;
+
+function clean(value: unknown): string {
   if (value === undefined || value === null) return '';
-  if (typeof value === 'string') return value.trim();
-  return String(value).trim();
+  const s = typeof value === 'string' ? value : String(value);
+  const stripped = stripControlSequences(s).trim();
+  return stripped.length > MAX_FIELD_LEN ? stripped.slice(0, MAX_FIELD_LEN) : stripped;
 }
 
 function extractDisplayValue(field: unknown): string {
   if (!field) return '';
-  if (typeof field === 'object' && field !== null && 'displayValue' in field) {
-    return stringifyDisplayValue((field as { displayValue?: unknown }).displayValue);
+  if (typeof field === 'object' && field !== null) {
+    // For objects, only honour an own `displayValue` property — never walk the
+    // prototype chain. If absent, return '' rather than stringifying the object.
+    if (Object.hasOwn(field as object, 'displayValue')) {
+      return clean((field as { displayValue?: unknown }).displayValue);
+    }
+    return '';
   }
-  return stringifyDisplayValue(field);
+  return clean(field);
 }
 
 // Extract displayValue from nested dict fields, handling all observed shapes
@@ -27,21 +37,21 @@ function extractDisplayValues(field: unknown): string {
 }
 
 export function normalizeSession(raw: RawSession, eventId: string): Session | null {
-  const code = raw.sessionCode?.trim();
-  if (!code) return null;
+  const code = clean(raw.sessionCode);
+  if (!code || !SESSION_CODE_RE.test(code)) return null;
 
   return {
     sessionCode: code,
-    title: raw.title?.trim() ?? '',
-    description: raw.description?.trim() ?? '',
+    title: clean(raw.title),
+    description: clean(raw.description),
     speakers: typeof raw.speakerNames === 'string'
-      ? raw.speakerNames.trim()
+      ? clean(raw.speakerNames)
       : Array.isArray(raw.speakerNames)
-        ? raw.speakerNames.join(', ')
+        ? clean(raw.speakerNames.join(', '))
         : '',
-    timeSlot: raw.TimeSlot?.trim() ?? '',
-    startDateTime: raw.startDateTime ?? '',
-    endDateTime: raw.endDateTime ?? '',
+    timeSlot: clean(raw.TimeSlot),
+    startDateTime: clean(raw.startDateTime),
+    endDateTime: clean(raw.endDateTime),
     location: extractDisplayValues(raw.location),
     level: extractDisplayValues(raw.sessionLevel),
     type: extractDisplayValues(raw.sessionType),
@@ -51,10 +61,10 @@ export function normalizeSession(raw: RawSession, eventId: string): Session | nu
     languages: extractDisplayValues(raw.programmingLanguages),
     tags: extractDisplayValues(raw.tags),
     relatedSessionCodes: Array.isArray(raw.relatedSessionCodes)
-      ? raw.relatedSessionCodes.join(', ')
+      ? clean(raw.relatedSessionCodes.join(', '))
       : '',
-    slideDeck: raw.slideDeck ?? '',
-    onDemand: raw.onDemand ?? '',
+    slideDeck: clean(raw.slideDeck),
+    onDemand: clean(raw.onDemand),
     event: eventId,
   };
 }

@@ -6,6 +6,7 @@ import type { Session, CacheMeta, EventConfig, CacheCheckStatus } from '../contr
 import { KNOWN_EVENTS } from '../config.js';
 import { FetchError } from '../errors.js';
 import { normalizeCatalog } from './normalize.js';
+import { safeFetchJson } from './http.js';
 
 const paths = envPaths('msevents', { suffix: '' });
 const MINUTE_MS = 60 * 1000;
@@ -55,8 +56,8 @@ function formatSessionCount(count: number): string {
   return `${count} session${count === 1 ? '' : 's'}`;
 }
 
-function formatResponseStatus(response: Response): string {
-  return [response.status, response.statusText].filter(Boolean).join(' ');
+function formatStatusLine(status: number, statusText: string): string {
+  return [status, statusText].filter(Boolean).join(' ');
 }
 
 function intervalForStableCatalog(meta: CacheMeta, now: Date): number {
@@ -182,23 +183,24 @@ export async function fetchAndCache(
     log?.('  Remote check: GET.\n');
   }
 
-  let response: Response;
+  let result;
   try {
-    response = await fetch(event.endpoint, { headers });
+    result = await safeFetchJson(event.endpoint, { headers });
   } catch (err) {
     await recordFetchFailure(event.id);
+    if (err instanceof FetchError) throw err;
     throw new FetchError(
       `Failed to reach ${event.endpoint}: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
   // 304 Not Modified — cache is still fresh
-  if (response.status === 304) {
+  if (result.status === 304) {
     if (!canRevalidate || existingMeta === null) {
       await recordFetchFailure(event.id);
       throw new FetchError(
         `${event.endpoint} returned 304 without a usable local cache`,
-        response.status,
+        result.status,
       );
     }
 
@@ -207,7 +209,7 @@ export async function fetchAndCache(
       await recordFetchFailure(event.id);
       throw new FetchError(
         `${event.endpoint} returned 304 without a usable local cache`,
-        response.status,
+        result.status,
       );
     }
 
@@ -226,21 +228,21 @@ export async function fetchAndCache(
     return existingSessions;
   }
 
-  if (!response.ok) {
-    log?.(`  Remote catalog: failed (${formatResponseStatus(response)}).\n`);
+  if (result.status < 200 || result.status >= 300) {
+    log?.(`  Remote catalog: failed (${formatStatusLine(result.status, result.statusText)}).\n`);
     await recordFetchFailure(event.id);
     throw new FetchError(
-      `${event.endpoint} returned ${response.status}`,
-      response.status,
+      `${event.endpoint} returned ${result.status}`,
+      result.status,
     );
   }
 
-  log?.(`  Remote catalog: downloaded (${formatResponseStatus(response)}).\n`);
+  log?.(`  Remote catalog: downloaded (${formatStatusLine(result.status, result.statusText)}).\n`);
   log?.('  JSON download: yes.\n');
 
   let raw: unknown;
   try {
-    raw = await response.json();
+    raw = JSON.parse(result.body ?? '');
   } catch (err) {
     await recordFetchFailure(event.id);
     throw new FetchError(
@@ -261,8 +263,8 @@ export async function fetchAndCache(
     fetchedAt: now.toISOString(),
     checkedAt: now.toISOString(),
     sessionCount: sessions.length,
-    etag: response.headers.get('etag') ?? undefined,
-    lastModified: response.headers.get('last-modified') ?? undefined,
+    etag: result.headers.get('etag') ?? undefined,
+    lastModified: result.headers.get('last-modified') ?? undefined,
     lastCheckStatus: 'updated',
     consecutiveFailures: 0,
   };
