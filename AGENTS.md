@@ -40,7 +40,7 @@ npm run smoke:fixture
 
 `npm run smoke:live` hits the live catalog; CI only runs it outside pull requests.
 
-Note: The first time `npx @microsoft/events-cli` is run, it prompts for permission and can cause CLI tool calls to hang in AI agents. In all instructions or `SKILL.md`, prefer `npx -y @microsoft/events-cli` to include the `-y` flag.
+Note: The first time `npx @microsoft/events-cli` is run, it prompts for permission and can cause CLI tool calls to hang in AI agents. In all instructions or `SKILL.md`, prefer `npx -y @microsoft/events-cli@0.3.0` to include the `-y` flag and a pinned version.
 
 ## CLI behavior contracts
 

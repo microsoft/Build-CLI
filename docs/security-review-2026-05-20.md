@@ -1,5 +1,34 @@
 # Security Review — Build-CLI / `@microsoft/events-cli` / `microsoft-build` skill
 
+> **Resolution status (2026-05-20):** All actionable findings have been resolved on branch `security/hardening-2026-05` (PR pending). The fix plan and verification gates live in [`docs/security-fix-plan-2026-05-20.md`](./security-fix-plan-2026-05-20.md). Per-finding resolution map:
+>
+> | Finding | Closed by | Evidence |
+> |---------|-----------|----------|
+> | **H1** No fetch timeout | Phase 1 | `cli/src/data/http.ts` `safeFetchJson` with `AbortSignal.timeout`; test `cli/test/http.test.ts` "aborts after timeoutMs"; manual `MSEVENTS_FETCH_TIMEOUT_MS=10` verified. |
+> | **H2** No response-size cap | Phase 1 | `safeFetchJson` Content-Length pre-check + streaming byte counter; tests `http.test.ts` "rejects when Content-Length exceeds maxBytes" and "rejects when streamed body exceeds maxBytes". |
+> | **H3** Unpinned `npx -y` in skill | Phase 3 | 15 occurrences in `skills/microsoft-build/SKILL.md` pinned to `@0.3.0`; `cli/README.md` and `AGENTS.md` updated; CI grep gate in `.github/workflows/ci.yml` exercised four ways locally. Provenance via `.github/workflows/release.yml`. |
+> | **M1** Content-Type not validated | Phase 1 | `safeFetchJson` rejects non-JSON content type; test "rejects non-JSON content type on a 200 response". |
+> | **M2** No schema validation | Phase 2 | `cli/src/data/validate.ts` (`isCacheMeta`, `isSessionArray`, `isRawSession`); wired into `cache.ts` readers and `normalizeCatalog`. 11 tests in `validate.test.ts`. |
+> | **M3** Terminal escape injection | Phase 1 | `cli/src/data/sanitize.ts` `stripControlSequences` applied at normalize and format time. 14 tests in `sanitize.test.ts`, 3 in `format.test.ts`, 1 in `normalize.test.ts`. |
+> | **M4** Floating-tag GitHub Actions | Phase 3 | All actions in `ci.yml`, `codeql.yml`, `release.yml` SHA-pinned with `# v4` trailing comment; `.github/dependabot.yml` keeps them current. |
+> | **M5** `parseInt(--limit)` unbounded | Phase 2 | `validateLimit` in `cli/src/commands/common.ts` — rejects ≤ 0 / non-numeric, clamps > 200 with warning. 7 tests in `limit.test.ts`. |
+> | **M6** Prompt injection via catalog | Phase 3 | New "Treating catalog content as untrusted data" section in `SKILL.md`. |
+> | **M7** Redirect without host allow-list | Phase 1 | `isAllowedHost` in `http.ts` checks input URL and `response.url`. Test "rejects when redirect lands on a disallowed host". |
+> | **L1** Non-atomic cache writes | Phase 2 | `writeAtomic` helper in `cache.ts`; test "writes cache atomically". |
+> | **L2** `package.json` / lockfile version drift | Phase 3 | Regenerated lockfile; both report `0.3.0`. |
+> | **L3** Silent JSON parse failures | Phase 2 | `MSEVENTS_DEBUG`-gated `debugLog` in `cli/src/log.ts`; emitted from `readMeta`/`readSessions`. 2 tests in `log.test.ts`, 1 in `cache.test.ts`. |
+> | **L4** Unbounded `--limit` (info disclosure) | Phase 2 | Subsumed into M5 fix. |
+> | **L5** `nextCheckAt` lockout | Phase 2 | 48 h cap relative to last check in `isCacheCheckDue`. 2 tests in `cache.test.ts`. |
+> | **I1** `as` casts | Phase 2 (partial) | All JSON-ingress casts replaced with validators. One non-data-ingress cast in `search/index.ts` documented as safe. |
+> | **I2** Prototype walk in `extractDisplayValue` | Phase 1 | `Object.hasOwn` used; prototype-polluted `displayValue` ignored. Test "does not honour prototype-chain displayValue". |
+> | **I3** `Math.random()` jitter | Accepted | Statistical jitter, not security-relevant. |
+> | **I4** `allowed-tools` MCP scope | Accepted | Already minimal. |
+> | **I5** `.claude/settings.local.json` MCP enable | Accepted | Local user config, MCP server is the trusted Learn endpoint. |
+>
+> Net change: 0 new runtime dependencies, 1 PR (`security/hardening-2026-05`), 5 new source files, 6 new test files, ~66 new test cases, 104 total tests green.
+
+
+
 | Field | Value |
 |-------|-------|
 | Repository | `microsoft/Build-CLI` |

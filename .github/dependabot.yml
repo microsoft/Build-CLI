@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies
+      - security
+  - package-ecosystem: npm
+    directory: /cli
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies

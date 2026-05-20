@@ -17,7 +17,7 @@ node --version
 ### Option A: Run instantly with `npx` (no install)
 
 ```bash
-npx -y @microsoft/events-cli sessions --query "Microsoft Foundry"
+npx -y @microsoft/events-cli@0.3.0 sessions --query "Microsoft Foundry"
 ```
 
 ### Option B: Install globally

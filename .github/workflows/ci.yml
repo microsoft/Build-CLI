@@ -25,10 +25,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with:
           node-version: 22.x
           cache: npm
@@ -36,6 +36,37 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify SKILL.md pins current CLI version exactly
+        working-directory: ${{ github.workspace }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI_VERSION=$(node -p "require('./cli/package.json').version")
+          FILES="skills/microsoft-build/SKILL.md cli/README.md AGENTS.md"
+
+          # Count every `npx -y @microsoft/events-cli...` invocation regardless of pin.
+          TOTAL=$(grep -cE "npx -y @microsoft/events-cli" $FILES 2>/dev/null | awk -F: '{ sum += $2 } END { print sum+0 }')
+
+          # Count invocations pinned to the exact current version.
+          # The trailing pattern ensures we match @0.3.0 but NOT @0.3.0-rc1 or @0.3.05.
+          GOOD=$(grep -cE "npx -y @microsoft/events-cli@${CLI_VERSION//./\\.}([^0-9.]|$)" $FILES 2>/dev/null | awk -F: '{ sum += $2 } END { print sum+0 }')
+
+          BAD=$((TOTAL - GOOD))
+
+          if [ "$BAD" -gt 0 ]; then
+            echo "::error::Found $BAD non-canonical 'npx -y @microsoft/events-cli' invocation(s); expected exact pin '@${CLI_VERSION}'."
+            # Surface the offending lines for the contributor.
+            grep -nE "npx -y @microsoft/events-cli" $FILES | \
+              grep -vE "npx -y @microsoft/events-cli@${CLI_VERSION//./\\.}([^0-9.]|$)" || true
+            exit 1
+          fi
+
+          if [ "$GOOD" -eq 0 ]; then
+            echo "::error::No reference to 'npx -y @microsoft/events-cli@${CLI_VERSION}' found."
+            exit 1
+          fi
+          echo "OK: $GOOD canonical pin(s) at @${CLI_VERSION}; 0 non-canonical invocations."
 
       - name: Build
         run: npm run build
