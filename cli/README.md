@@ -90,6 +90,7 @@ Use `--event <id>` to filter to a single event. Without it, commands search acro
 | `MSEVENTS_CACHE_DIR` | per-OS cache path | Override the cache directory. |
 | `MSEVENTS_FETCH_TIMEOUT_MS` | `30000` | Abort catalog requests after this many milliseconds. |
 | `MSEVENTS_MAX_RESPONSE_BYTES` | `52428800` (50 MiB) | Reject catalog responses larger than this. |
+| `MSEVENTS_DEBUG` | unset | When set to any value, emit diagnostic lines on stderr — useful for diagnosing malformed-cache fallbacks. |
 
 ## Development
 

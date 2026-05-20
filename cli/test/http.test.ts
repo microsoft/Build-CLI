@@ -118,6 +118,31 @@ describe('safeFetchJson', () => {
     expect(r.body).toBe('[{"a":1}]');
   });
 
+  it('returns non-2xx with null body (no buffered HTML error page)', async () => {
+    // A 500 with a giant HTML body — caller would discard it anyway.
+    const hugeBody = '<html>' + 'x'.repeat(200_000) + '</html>';
+    vi.stubGlobal('fetch', async () => new Response(hugeBody, {
+      status: 500,
+      headers: { 'content-type': 'text/html' },
+    }));
+    const r = await safeFetchJson('https://aka.ms/x');
+    expect(r.status).toBe(500);
+    // Critical: body is not returned to caller — error-page payload is discarded.
+    expect(r.body).toBeNull();
+  });
+
+  it('does not enforce the JSON content-type check on non-2xx responses', async () => {
+    // A 503 with text/html should NOT throw the "Unexpected Content-Type" FetchError —
+    // it should pass through as a non-ok result so callers can record the failure.
+    vi.stubGlobal('fetch', async () => new Response('<html>maintenance</html>', {
+      status: 503,
+      headers: { 'content-type': 'text/html' },
+    }));
+    const r = await safeFetchJson('https://aka.ms/x');
+    expect(r.status).toBe(503);
+    expect(r.body).toBeNull();
+  });
+
   it('passes conditional-GET headers through', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 304 }));
     vi.stubGlobal('fetch', fetchMock);

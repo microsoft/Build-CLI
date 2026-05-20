@@ -7,8 +7,15 @@ export function formatSessionShort(s: Session): string {
   if (s.speakers) parts.push(`  Speaker(s): ${S(s.speakers)}`);
   if (s.startDateTime) {
     const d = new Date(s.startDateTime);
-    const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    parts.push(`  When: ${date}, ${S(s.timeSlot) || d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
+    if (Number.isFinite(d.getTime())) {
+      const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      parts.push(`  When: ${date}, ${S(s.timeSlot) || d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
+    } else if (s.timeSlot) {
+      parts.push(`  When: ${S(s.timeSlot)}`);
+    } else {
+      // startDateTime present but unparseable — fall back to the sanitized raw value.
+      parts.push(`  When: ${S(s.startDateTime)}`);
+    }
   } else if (s.timeSlot) {
     parts.push(`  When: ${S(s.timeSlot)}`);
   }

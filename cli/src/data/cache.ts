@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import envPaths from 'env-paths';
 import type { Session, CacheMeta, EventConfig, CacheCheckStatus } from '../contracts.js';
 import { KNOWN_EVENTS } from '../config.js';
@@ -119,7 +120,10 @@ export function isCacheCheckDue(meta: CacheMeta | null, now: Date = new Date()):
 }
 
 async function writeAtomic(path: string, data: string): Promise<void> {
-  const tmp = `${path}.tmp.${process.pid}.${Date.now()}`;
+  // Append a UUID so parallel writes within the same process / millisecond
+  // cannot collide on the temp filename. Rename is atomic on POSIX and on
+  // NTFS (within the same volume), so the final state is always consistent.
+  const tmp = `${path}.tmp.${process.pid}.${randomUUID()}`;
   try {
     await writeFile(tmp, data);
     await rename(tmp, path);

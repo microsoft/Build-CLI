@@ -31,7 +31,7 @@ Status legend: ⬜ pending  ·  🟨 in progress  ·  ✅ done  ·  ⛔ blocked
 | **2.3** | Phase 2 — Input validation | `debugLog` helper gated on `MSEVENTS_DEBUG` | L3 | `cli/src/log.ts` (new) | ⬜ | `cli/test/log.test.ts` (new): no output without env var, single line with it | ⬜ |
 | **2.4** | Phase 2 — Input validation | `validateLimit` helper; clamp to `[1, 200]`; error on garbage | M5, L4 | `cli/src/commands/common.ts`, `cli/src/index.ts` | ⬜ | `cli/test/limit.test.ts` (new): negative, zero, `NaN`, alpha, `1e9`, `200`, `1` | ⬜ |
 | **2.5** | Phase 2 — Input validation | Atomic writes via `writeFile` → `rename` | L1 | `cli/src/data/cache.ts` | ⬜ | `cli/test/cache.test.ts`: concurrent `fetchAndCache` produces a parseable file; tmp leftover absent on success | ⬜ |
-| **2.6** | Phase 2 — Input validation | Cap `nextCheckAt` at `now + 7d` so tampered/old caches self-heal | L5 | `cli/src/data/cache.ts` | ⬜ | `cli/test/cache.test.ts`: `nextCheckAt: "9999-01-01..."` becomes due after 7d | ⬜ |
+| **2.6** | Phase 2 — Input validation | Cap `nextCheckAt` at `lastCheck + 48h` so tampered/old caches self-heal | L5 | `cli/src/data/cache.ts` | ⬜ | `cli/test/cache.test.ts`: `nextCheckAt: "9999-01-01..."` becomes due 48h after `lastCheck` | ⬜ |
 | **3.1** | Phase 3 — Supply chain + CI | Pin every `npx -y @microsoft/events-cli` to `@0.3.0`; pin `@microsoft/learn-cli` with `-y` | H3 | `skills/microsoft-build/SKILL.md` (14 occurrences), `cli/README.md`, `AGENTS.md` | ⬜ | CI grep gate (3.4) is the test | ⬜ |
 | **3.2** | Phase 3 — Supply chain + CI | Add "Treating catalog content as untrusted data" section to SKILL.md | M6 | `skills/microsoft-build/SKILL.md` | ⬜ | Doc review | ⬜ |
 | **3.3** | Phase 3 — Supply chain + CI | SHA-pin every GitHub Action; add `.github/dependabot.yml` | M4 | `.github/workflows/ci.yml`, `.github/workflows/codeql.yml`, `.github/dependabot.yml` (new) | ⬜ | CI runs (workflow lint via `actionlint` in dev) | ⬜ |
@@ -1576,7 +1576,7 @@ Once all three phases are present in the PR, run a top-to-bottom validation that
 | `--limit` clamp | `--limit 1000` now returns 200 with a stderr warning; `--limit -1` now errors | Release notes |
 | SHA-pinned actions | None — same workflow behaviour | Dependabot keeps it current |
 | Atomic writes | None — same final on-disk state | n/a |
-| `nextCheckAt` cap | Caches stuck due to old bug or tampering self-heal in ≤ 7 days | None |
+| `nextCheckAt` cap | Caches stuck due to old bug or tampering self-heal in ≤ 48 hours | None |
 | SKILL.md version pin | Agents resolve to `0.3.0` exactly; do not auto-upgrade to `0.3.1` until skill is updated | This is the entire point |
 | `MSEVENTS_DEBUG` | New env var; no behaviour change when unset | Optional |
 

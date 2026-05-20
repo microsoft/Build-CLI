@@ -15,7 +15,7 @@ compatibility: >-
   to direct HTTP fetch if the CLI is not available. For documentation, prefers
   the Microsoft Learn MCP Server (https://learn.microsoft.com/api/mcp); if MCP
   tools are unavailable, falls back to the mslearn CLI
-  (`npx @microsoft/learn-cli`). No Azure subscription required.
+  (`npx -y @microsoft/learn-cli`). No Azure subscription required.
 metadata:
   author: Microsoft Learn partnerships team
   version: "0.5"
@@ -189,9 +189,9 @@ Use Learn MCP tools to retrieve current documentation:
 **CLI fallback** — if Learn MCP tools are not available (e.g., MCP server not configured), use the `mslearn` CLI instead:
 
 ```sh
-npx @microsoft/learn-cli search "azure functions timeout"
-npx @microsoft/learn-cli fetch "https://learn.microsoft.com/..." --section "Configuration" --max-chars 5000
-npx @microsoft/learn-cli code-search "azure openai streaming"
+npx -y @microsoft/learn-cli search "azure functions timeout"
+npx -y @microsoft/learn-cli fetch "https://learn.microsoft.com/..." --section "Configuration" --max-chars 5000
+npx -y @microsoft/learn-cli code-search "azure openai streaming"
 ```
 
 | MCP tool | CLI equivalent |

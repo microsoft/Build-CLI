@@ -96,6 +96,19 @@ export async function safeFetchJson(
     };
   }
 
+  // Non-2xx (error pages, redirects we didn't follow, etc.): callers do not
+  // need the body. Short-circuit to avoid buffering an unbounded HTML payload
+  // we'd discard anyway, and to keep error-path latency tight.
+  if (!response.ok) {
+    return {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      body: null,
+      finalUrl: response.url,
+    };
+  }
+
   const lenHeader = response.headers.get('content-length');
   if (lenHeader) {
     const len = Number.parseInt(lenHeader, 10);
@@ -106,8 +119,9 @@ export async function safeFetchJson(
     }
   }
 
+  // At this point response.ok is guaranteed by the short-circuit above.
   const ctype = response.headers.get('content-type') ?? '';
-  if (response.ok && !ctype.toLowerCase().includes('application/json')) {
+  if (!ctype.toLowerCase().includes('application/json')) {
     throw new FetchError(
       `Unexpected Content-Type from ${url}: ${ctype || '<none>'}`,
     );

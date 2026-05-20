@@ -48,4 +48,15 @@ describe('format-time defensive sanitize', () => {
     );
     expect(out).toMatch(/\\u001[bB]/);
   });
+
+  it('does not crash or render "Invalid Date" when startDateTime is malformed', () => {
+    const s = dirtySession();
+    s.startDateTime = 'not a real date';
+    s.timeSlot = '';
+    expect(() => formatSessionShort(s)).not.toThrow();
+    const out = formatSessionShort(s);
+    expect(out).not.toContain('Invalid Date');
+    // Falls back to the sanitized raw value.
+    expect(out).toContain('not a real date');
+  });
 });
