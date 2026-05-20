@@ -17,6 +17,22 @@ export function validateEventId(eventId: string): boolean {
   return false;
 }
 
+const MAX_LIMIT = 200;
+
+export function validateLimit(raw: string): number | null {
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.error(`--limit must be a positive integer (got: "${raw}")`);
+    process.exitCode = 1;
+    return null;
+  }
+  if (parsed > MAX_LIMIT) {
+    process.stderr.write(`--limit ${parsed} exceeds maximum (${MAX_LIMIT}); clamping.\n`);
+    return MAX_LIMIT;
+  }
+  return parsed;
+}
+
 export async function ensureCache(eventFilter?: string): Promise<Session[]> {
   let missingCacheHeaderPrinted = false;
   const availableSessions: Session[] = [];

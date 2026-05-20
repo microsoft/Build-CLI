@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import envPaths from 'env-paths';
@@ -7,6 +7,8 @@ import { KNOWN_EVENTS } from '../config.js';
 import { FetchError } from '../errors.js';
 import { normalizeCatalog } from './normalize.js';
 import { safeFetchJson } from './http.js';
+import { isCacheMeta, isSessionArray } from './validate.js';
+import { debugLog } from '../log.js';
 
 const paths = envPaths('msevents', { suffix: '' });
 const MINUTE_MS = 60 * 1000;
@@ -16,6 +18,10 @@ const ACTIVE_REVALIDATION_INTERVAL_MS = 20 * MINUTE_MS;
 const FAILURE_REVALIDATION_INTERVAL_MS = 15 * MINUTE_MS;
 const MAX_FAILURE_REVALIDATION_INTERVAL_MS = 2 * HOUR_MS;
 const JITTER_RATIO = 0.2;
+// Hard cap on how far in the future `nextCheckAt` may push a revalidation.
+// The largest legitimate value is roughly 24h + 20% jitter ≈ 28.8h; 48h gives
+// ~1.7x headroom while ensuring a tampered or stale cache self-heals.
+const MAX_NEXT_CHECK_AHEAD_MS = 48 * HOUR_MS;
 
 export interface FetchAndCacheOptions {
   force?: boolean;
@@ -94,16 +100,38 @@ export function isCacheCheckDue(meta: CacheMeta | null, now: Date = new Date()):
   if (!meta) return true;
 
   const nextCheck = parseTime(meta.nextCheckAt);
-  if (nextCheck !== null) return now.getTime() >= nextCheck;
+  if (nextCheck !== null) {
+    // Cap nextCheckAt at (lastCheck + 48h) so a tampered or stale meta cannot
+    // suppress revalidation indefinitely. If there is no lastCheck, fall back
+    // to (fetchedAt + 48h) since that's the most-recent-known reference point.
+    const lastCheck = parseTime(meta.checkedAt ?? meta.fetchedAt);
+    if (lastCheck !== null) {
+      const cap = lastCheck + MAX_NEXT_CHECK_AHEAD_MS;
+      const effective = Math.min(nextCheck, cap);
+      return now.getTime() >= effective;
+    }
+    return now.getTime() >= nextCheck;
+  }
 
   const lastCheck = parseTime(meta.checkedAt ?? meta.fetchedAt);
   if (lastCheck === null) return true;
   return now.getTime() - lastCheck >= ACTIVE_REVALIDATION_INTERVAL_MS;
 }
 
+async function writeAtomic(path: string, data: string): Promise<void> {
+  const tmp = `${path}.tmp.${process.pid}.${Date.now()}`;
+  try {
+    await writeFile(tmp, data);
+    await rename(tmp, path);
+  } catch (err) {
+    await rm(tmp, { force: true }).catch(() => {});
+    throw err;
+  }
+}
+
 async function writeMeta(eventId: string, meta: CacheMeta): Promise<void> {
   await ensureCacheDir();
-  await writeFile(metaPath(eventId), JSON.stringify(meta, null, 2));
+  await writeAtomic(metaPath(eventId), JSON.stringify(meta, null, 2));
 }
 
 async function cachedSessionsTimestamp(eventId: string, fallback: Date): Promise<string> {
@@ -119,9 +147,14 @@ export async function readMeta(eventId: string): Promise<CacheMeta | null> {
   const path = metaPath(eventId);
   if (!existsSync(path)) return null;
   try {
-    const data = JSON.parse(await readFile(path, 'utf-8')) as CacheMeta;
-    return data;
-  } catch {
+    const parsed: unknown = JSON.parse(await readFile(path, 'utf-8'));
+    if (!isCacheMeta(parsed)) {
+      debugLog(`Discarding malformed meta for ${eventId} at ${path}`);
+      return null;
+    }
+    return parsed;
+  } catch (err) {
+    debugLog(`Failed to parse meta for ${eventId}: ${(err as Error).message}`);
     return null;
   }
 }
@@ -130,8 +163,14 @@ export async function readSessions(eventId: string): Promise<Session[]> {
   const path = sessionsPath(eventId);
   if (!existsSync(path)) return [];
   try {
-    return JSON.parse(await readFile(path, 'utf-8')) as Session[];
-  } catch {
+    const parsed: unknown = JSON.parse(await readFile(path, 'utf-8'));
+    if (!isSessionArray(parsed)) {
+      debugLog(`Discarding malformed sessions for ${eventId} at ${path}`);
+      return [];
+    }
+    return parsed;
+  } catch (err) {
+    debugLog(`Failed to parse sessions for ${eventId}: ${(err as Error).message}`);
     return [];
   }
 }
@@ -273,7 +312,7 @@ export async function fetchAndCache(
     nextCheckAt: nextCheckAt(metaBase, 'updated', now),
   };
 
-  await writeFile(sessionsPath(event.id), JSON.stringify(sessions));
+  await writeAtomic(sessionsPath(event.id), JSON.stringify(sessions));
   await writeMeta(event.id, meta);
   log?.(`  Local cache: ${hasExistingSessions ? 'updated' : 'created'} with ${formatSessionCount(sessions.length)}.\n`);
 

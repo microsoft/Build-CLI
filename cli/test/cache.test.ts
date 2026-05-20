@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ensureCache } from '../src/commands/common.js';
 import { refresh } from '../src/commands/refresh.js';
-import { getAllCachedSessions, readMeta } from '../src/data/cache.js';
+import { getAllCachedSessions, isCacheCheckDue, readMeta, readSessions } from '../src/data/cache.js';
 import type { CacheMeta, RawSession, Session } from '../src/contracts.js';
 
 const NOW = '2026-05-07T03:00:00.000Z';
@@ -428,5 +428,109 @@ describe('automatic cache revalidation', () => {
       'failed: https://aka.ms/build2026-session-info ' +
         'returned 304 without a usable local cache',
     );
+  });
+
+  it('discards a malformed meta file and logs when MSEVENTS_DEBUG is set', async () => {
+    await writeFile(
+      join(cacheDir, 'build-2026-meta.json'),
+      '{"this": "is not a CacheMeta"}',
+    );
+    process.env.MSEVENTS_DEBUG = '1';
+    try {
+      const meta = await readMeta('build-2026');
+      expect(meta).toBeNull();
+      expect(stderrOutput()).toContain('Discarding malformed meta');
+    } finally {
+      delete process.env.MSEVENTS_DEBUG;
+    }
+  });
+
+  it('discards a malformed sessions file and falls back to empty array', async () => {
+    await writeFile(
+      join(cacheDir, 'build-2026-sessions.json'),
+      '{"not": "an array"}',
+    );
+    const sessions = await readSessions('build-2026');
+    expect(sessions).toEqual([]);
+  });
+
+  it('writes cache atomically — final file is parseable, no .tmp debris on success', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
+      [{ sessionCode: 'BRK202', title: 'Build 2026 session' }],
+      { etag: '"x"', 'last-modified': 'Thu, 07 May 2026 02:56:00 GMT' },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+    await ensureCache('build-2026');
+    const raw = await readFile(join(cacheDir, 'build-2026-sessions.json'), 'utf-8');
+    expect(() => JSON.parse(raw)).not.toThrow();
+    const entries = await readdir(cacheDir);
+    expect(entries.some((e) => e.includes('.tmp.'))).toBe(false);
+  });
+
+  it('treats a far-future nextCheckAt as capped at 48h', () => {
+    const meta: CacheMeta = {
+      eventId: 'x',
+      fetchedAt: '2026-05-07T00:00:00.000Z',
+      nextCheckAt: '9999-01-01T00:00:00.000Z',
+      sessionCount: 1,
+    };
+    expect(isCacheCheckDue(meta, new Date('2026-05-08T00:00:00.000Z'))).toBe(false);
+    expect(isCacheCheckDue(meta, new Date('2026-05-09T00:01:00.000Z'))).toBe(true);
+  });
+
+  it('does not trip the 48h cap on a legitimate 28h nextCheckAt', () => {
+    const meta: CacheMeta = {
+      eventId: 'x',
+      fetchedAt: '2026-05-07T00:00:00.000Z',
+      nextCheckAt: '2026-05-08T04:00:00.000Z',
+      sessionCount: 1,
+    };
+    expect(isCacheCheckDue(meta, new Date('2026-05-07T12:00:00.000Z'))).toBe(false);
+    expect(isCacheCheckDue(meta, new Date('2026-05-08T05:00:00.000Z'))).toBe(true);
+  });
+
+  it('falls back to stale cache when fetch times out', async () => {
+    await writeCachedEvent('build-2026', {
+      checkedAt: '2026-05-07T01:00:00.000Z',
+      nextCheckAt: '2026-05-07T02:00:00.000Z',
+    });
+    const fetchMock = vi.fn((_: string, init?: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          const e = new Error('aborted');
+          e.name = 'TimeoutError';
+          reject(e);
+        });
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    process.env.MSEVENTS_FETCH_TIMEOUT_MS = '50';
+    try {
+      const sessions = await ensureCache('build-2026');
+      expect(sessions.length).toBe(1);
+      const meta = await readMeta('build-2026');
+      expect(meta?.lastCheckStatus).toBe('failed');
+    } finally {
+      delete process.env.MSEVENTS_FETCH_TIMEOUT_MS;
+    }
+  });
+
+  it('treats oversized response as a fetch failure', async () => {
+    await writeCachedEvent('build-2026', {
+      nextCheckAt: '2026-05-07T02:00:00.000Z',
+    });
+    vi.stubGlobal('fetch', async () => new Response('[]', {
+      status: 200,
+      headers: { 'content-type': 'application/json', 'content-length': '999999999' },
+    }));
+    process.env.MSEVENTS_MAX_RESPONSE_BYTES = '1024';
+    try {
+      const sessions = await ensureCache('build-2026');
+      expect(sessions.length).toBe(1); // stale cache returned
+      const meta = await readMeta('build-2026');
+      expect(meta?.lastCheckStatus).toBe('failed');
+    } finally {
+      delete process.env.MSEVENTS_MAX_RESPONSE_BYTES;
+    }
   });
 });

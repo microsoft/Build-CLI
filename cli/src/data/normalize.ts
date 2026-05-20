@@ -1,5 +1,6 @@
 import type { RawSession, Session } from '../contracts.js';
 import { stripControlSequences } from './sanitize.js';
+import { isRawSession } from './validate.js';
 
 const MAX_FIELD_LEN = 64 * 1024;
 const SESSION_CODE_RE = /^[A-Z0-9][A-Z0-9_.-]{0,32}$/i;
@@ -70,7 +71,8 @@ export function normalizeSession(raw: RawSession, eventId: string): Session | nu
 }
 
 export function normalizeCatalog(raw: unknown[], eventId: string): Session[] {
-  return (raw as RawSession[])
+  return raw
+    .filter(isRawSession)
     .map((s) => normalizeSession(s, eventId))
     .filter((s): s is Session => s !== null);
 }
