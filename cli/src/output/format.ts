@@ -1,29 +1,5 @@
 import type { Session, SearchResult, CacheMeta } from '../contracts.js';
-import { stripControlSequences as S } from '../data/sanitize.js';
-
-function sanitizeSession(s: Session): Session {
-  return {
-    sessionCode: S(s.sessionCode),
-    title: S(s.title),
-    description: S(s.description),
-    speakers: S(s.speakers),
-    timeSlot: S(s.timeSlot),
-    startDateTime: S(s.startDateTime),
-    endDateTime: S(s.endDateTime),
-    location: S(s.location),
-    level: S(s.level),
-    type: S(s.type),
-    topic: S(s.topic),
-    solutionArea: S(s.solutionArea),
-    product: S(s.product),
-    languages: S(s.languages),
-    tags: S(s.tags),
-    relatedSessionCodes: S(s.relatedSessionCodes),
-    slideDeck: S(s.slideDeck),
-    onDemand: S(s.onDemand),
-    event: S(s.event),
-  };
-}
+import { sanitizeSession } from '../data/validate.js';
 
 export function formatSessionShort(s: Session): string {
   const clean = sanitizeSession(s);
@@ -87,7 +63,7 @@ export function formatSearchResults(results: SearchResult[], json: boolean): str
 
 export function formatSessionDetail(sessions: Session[], json: boolean): string {
   if (json) {
-    const clean = sessions.map(sanitizeSession);
+    const clean = sessions.map((session) => sanitizeSession(session));
     return JSON.stringify(clean.length === 1 ? clean[0] : clean, null, 2);
   }
   if (sessions.length === 0) return 'Session not found.';

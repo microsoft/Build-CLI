@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Session } from '../src/contracts.js';
-import { isCacheMeta, isRawSession, isSessionArray } from '../src/data/validate.js';
+import {
+  coerceSessionArray,
+  isCacheMeta,
+  isRawSession,
+  sanitizeSession,
+} from '../src/data/validate.js';
 
 function completeSession(overrides: Partial<Session> = {}): Session {
   return {
@@ -58,11 +63,48 @@ describe('isCacheMeta', () => {
   });
 });
 
-describe('isSessionArray', () => {
-  it('requires complete string-valued Session entries', () => {
-    expect(isSessionArray([completeSession()])).toBe(true);
-    expect(isSessionArray([{ sessionCode: 'BRK101', event: 'build-2026' }])).toBe(false);
-    expect(isSessionArray([completeSession({ title: 42 as unknown as string })])).toBe(false);
-    expect(isSessionArray({})).toBe(false);
+describe('sanitizeSession', () => {
+  it('fills missing fields and strips unsafe control sequences', () => {
+    expect(sanitizeSession({
+      sessionCode: 'BRK101',
+      title: '\x1B[31mTitle\x1B[0m',
+    }, 'build-2026')).toMatchObject({
+      sessionCode: 'BRK101',
+      title: 'Title',
+      description: '',
+      event: 'build-2026',
+    });
+  });
+});
+
+describe('coerceSessionArray', () => {
+  it('accepts partial session-shaped cache entries', () => {
+    const sessions = coerceSessionArray([
+      { sessionCode: 'BRK101', title: 'Cached' },
+    ], 'build-2026');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions![0]).toMatchObject({
+      sessionCode: 'BRK101',
+      title: 'Cached',
+      description: '',
+      event: 'build-2026',
+    });
+  });
+
+  it('drops invalid entries instead of requiring an exact cache schema', () => {
+    const sessions = coerceSessionArray([
+      completeSession(),
+      { sessionCode: '../../etc/passwd', title: 'Invalid' },
+      { sessionCode: 'BRK102', title: 42 },
+    ], 'build-2026');
+
+    expect(sessions).toHaveLength(2);
+    expect(sessions!.map((session) => session.sessionCode)).toEqual(['BRK101', 'BRK102']);
+    expect(sessions![1]!.title).toBe('');
+  });
+
+  it('rejects non-array cache payloads', () => {
+    expect(coerceSessionArray({}, 'build-2026')).toBeNull();
   });
 });

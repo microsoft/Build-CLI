@@ -8,7 +8,7 @@ import { KNOWN_EVENTS } from '../config.js';
 import { FetchError } from '../errors.js';
 import { normalizeCatalog } from './normalize.js';
 import { safeFetchJson, type SafeFetchResult } from './http.js';
-import { isCacheMeta, isSessionArray } from './validate.js';
+import { coerceSessionArray, isCacheMeta } from './validate.js';
 import { debugLog } from '../log.js';
 
 const paths = envPaths('msevents', { suffix: '' });
@@ -158,11 +158,15 @@ export async function readSessions(eventId: string): Promise<Session[]> {
   if (!existsSync(path)) return [];
   try {
     const parsed: unknown = JSON.parse(await readFile(path, 'utf-8'));
-    if (!isSessionArray(parsed)) {
+    const sessions = coerceSessionArray(parsed, eventId);
+    if (sessions === null) {
       debugLog(`Discarding malformed sessions for ${eventId} at ${path}`);
       return [];
     }
-    return parsed;
+    if (Array.isArray(parsed) && sessions.length !== parsed.length) {
+      debugLog(`Discarded ${parsed.length - sessions.length} malformed session(s) for ${eventId} at ${path}`);
+    }
+    return sessions;
   } catch (err) {
     debugLog(`Failed to parse sessions for ${eventId}: ${err instanceof Error ? err.message : String(err)}`);
     return [];

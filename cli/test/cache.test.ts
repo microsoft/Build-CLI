@@ -437,15 +437,34 @@ describe('automatic cache revalidation', () => {
       );
     });
 
-  it('discards malformed cache files without throwing', async () => {
+  it('discards malformed metadata and invalid cached sessions without throwing', async () => {
     await writeFile(join(cacheDir, 'build-2026-meta.json'), '{"eventId": 1}');
-    await writeFile(join(cacheDir, 'build-2026-sessions.json'), '[{"sessionCode":"BRK101","event":"build-2026"}]');
+    await writeFile(
+      join(cacheDir, 'build-2026-sessions.json'),
+      '[{"sessionCode":"../../etc/passwd","event":"build-2026"}]',
+    );
     process.env.MSEVENTS_DEBUG = '1';
 
     expect(await readMeta('build-2026')).toBeNull();
     expect(await readSessions('build-2026')).toEqual([]);
     expect(stderrOutput()).toContain('Discarding malformed meta');
-    expect(stderrOutput()).toContain('Discarding malformed sessions');
+    expect(stderrOutput()).toContain('Discarded 1 malformed session(s)');
+  });
+
+  it('coerces partial cached sessions for forward compatibility', async () => {
+    await writeFile(
+      join(cacheDir, 'build-2026-sessions.json'),
+      '[{"sessionCode":"BRK101","title":"Cached","unknownFutureField":"ignored"}]',
+    );
+
+    expect(await readSessions('build-2026')).toEqual([
+      expect.objectContaining({
+        sessionCode: 'BRK101',
+        title: 'Cached',
+        description: '',
+        event: 'build-2026',
+      }),
+    ]);
   });
 
   it('writes cache files atomically without leaving temp files on success', async () => {
