@@ -1,20 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FetchError } from '../src/errors.js';
-import { isAllowedHost, safeFetchJson } from '../src/data/http.js';
-
-describe('isAllowedHost', () => {
-  it('accepts current catalog entry points and Microsoft redirect targets', () => {
-    expect(isAllowedHost('https://aka.ms/build2026-session-info')).toBe(true);
-    expect(isAllowedHost('https://eventtools.event.microsoft.com/build2026-prod/fallback/session-all-en-us.json')).toBe(true);
-    expect(isAllowedHost('https://catalog.blob.core.windows.net/sessions.json')).toBe(true);
-  });
-
-  it('rejects look-alike and malformed hosts', () => {
-    expect(isAllowedHost('https://microsoft.com.evil.example/x')).toBe(false);
-    expect(isAllowedHost('https://aka.ms.evil.example/x')).toBe(false);
-    expect(isAllowedHost('not a url')).toBe(false);
-  });
-});
+import { safeFetchJson } from '../src/data/http.js';
 
 describe('safeFetchJson', () => {
   afterEach(() => {
@@ -22,15 +8,6 @@ describe('safeFetchJson', () => {
     vi.restoreAllMocks();
     delete process.env.MSEVENTS_FETCH_TIMEOUT_MS;
     delete process.env.MSEVENTS_MAX_RESPONSE_BYTES;
-  });
-
-  it('does not fetch disallowed input hosts', async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-
-    await expect(safeFetchJson('https://evil.example/catalog.json'))
-      .rejects.toThrow(/Host not in allow-list/);
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('passes conditional request headers through', async () => {
@@ -112,20 +89,6 @@ describe('safeFetchJson', () => {
 
     await expect(safeFetchJson('https://aka.ms/build2026-session-info', { maxBytes: 40 }))
       .rejects.toThrow(/exceeded 40 bytes/);
-  });
-
-  it('rejects redirects to disallowed hosts', async () => {
-    vi.stubGlobal('fetch', async () => {
-      const response = new Response('[]', {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-      Object.defineProperty(response, 'url', { value: 'https://evil.example/catalog.json' });
-      return response;
-    });
-
-    await expect(safeFetchJson('https://aka.ms/build2026-session-info'))
-      .rejects.toThrow(/disallowed host/);
   });
 
   it('maps fetch timeouts to FetchError', async () => {

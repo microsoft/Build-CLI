@@ -17,14 +17,6 @@ export interface SafeFetchResult {
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_BYTES = 50 * 1024 * 1024;
 
-const ALLOWED_HOST_SUFFIXES = [
-  'aka.ms',
-  '.microsoft.com',
-  '.azureedge.net',
-  '.azurewebsites.net',
-  '.blob.core.windows.net',
-];
-
 function envInt(name: string, fallback: number): number {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -32,27 +24,10 @@ function envInt(name: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-export function isAllowedHost(url: string): boolean {
-  let hostname: string;
-  try {
-    hostname = new URL(url).hostname.toLowerCase();
-  } catch {
-    return false;
-  }
-
-  return ALLOWED_HOST_SUFFIXES.some((suffix) =>
-    suffix.startsWith('.') ? hostname.endsWith(suffix) : hostname === suffix,
-  );
-}
-
 export async function safeFetchJson(
   url: string,
   options: SafeFetchOptions = {},
 ): Promise<SafeFetchResult> {
-  if (!isAllowedHost(url)) {
-    throw new FetchError(`Host not in allow-list: ${url}`);
-  }
-
   const timeoutMs = options.timeoutMs
     ?? envInt('MSEVENTS_FETCH_TIMEOUT_MS', DEFAULT_TIMEOUT_MS);
   const maxBytes = options.maxBytes
@@ -73,10 +48,6 @@ export async function safeFetchJson(
     throw new FetchError(
       `Failed to reach ${url}: ${err instanceof Error ? err.message : String(err)}`,
     );
-  }
-
-  if (response.url && !isAllowedHost(response.url)) {
-    throw new FetchError(`Redirect chain ended at disallowed host: ${response.url}`);
   }
 
   if (response.status === 304) {

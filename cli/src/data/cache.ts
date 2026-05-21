@@ -8,8 +8,6 @@ import { KNOWN_EVENTS } from '../config.js';
 import { FetchError } from '../errors.js';
 import { normalizeCatalog } from './normalize.js';
 import { safeFetchJson, type SafeFetchResult } from './http.js';
-import { coerceSessionArray, isCacheMeta } from './validate.js';
-import { debugLog } from '../log.js';
 
 const paths = envPaths('msevents', { suffix: '' });
 const MINUTE_MS = 60 * 1000;
@@ -19,7 +17,6 @@ const ACTIVE_REVALIDATION_INTERVAL_MS = 20 * MINUTE_MS;
 const FAILURE_REVALIDATION_INTERVAL_MS = 15 * MINUTE_MS;
 const MAX_FAILURE_REVALIDATION_INTERVAL_MS = 2 * HOUR_MS;
 const JITTER_RATIO = 0.2;
-const MAX_NEXT_CHECK_AHEAD_MS = 48 * HOUR_MS;
 
 export interface FetchAndCacheOptions {
   force?: boolean;
@@ -98,14 +95,7 @@ export function isCacheCheckDue(meta: CacheMeta | null, now: Date = new Date()):
   if (!meta) return true;
 
   const nextCheck = parseTime(meta.nextCheckAt);
-  if (nextCheck !== null) {
-    const lastCheck = parseTime(meta.checkedAt ?? meta.fetchedAt);
-    if (lastCheck !== null) {
-      const effectiveNextCheck = Math.min(nextCheck, lastCheck + MAX_NEXT_CHECK_AHEAD_MS);
-      return now.getTime() >= effectiveNextCheck;
-    }
-    return now.getTime() >= nextCheck;
-  }
+  if (nextCheck !== null) return now.getTime() >= nextCheck;
 
   const lastCheck = parseTime(meta.checkedAt ?? meta.fetchedAt);
   if (lastCheck === null) return true;
@@ -141,14 +131,9 @@ export async function readMeta(eventId: string): Promise<CacheMeta | null> {
   const path = metaPath(eventId);
   if (!existsSync(path)) return null;
   try {
-    const parsed: unknown = JSON.parse(await readFile(path, 'utf-8'));
-    if (!isCacheMeta(parsed)) {
-      debugLog(`Discarding malformed meta for ${eventId} at ${path}`);
-      return null;
-    }
-    return parsed;
-  } catch (err) {
-    debugLog(`Failed to parse meta for ${eventId}: ${err instanceof Error ? err.message : String(err)}`);
+    const data = JSON.parse(await readFile(path, 'utf-8')) as CacheMeta;
+    return data;
+  } catch {
     return null;
   }
 }
@@ -157,18 +142,8 @@ export async function readSessions(eventId: string): Promise<Session[]> {
   const path = sessionsPath(eventId);
   if (!existsSync(path)) return [];
   try {
-    const parsed: unknown = JSON.parse(await readFile(path, 'utf-8'));
-    const sessions = coerceSessionArray(parsed, eventId);
-    if (sessions === null) {
-      debugLog(`Discarding malformed sessions for ${eventId} at ${path}`);
-      return [];
-    }
-    if (Array.isArray(parsed) && sessions.length !== parsed.length) {
-      debugLog(`Discarded ${parsed.length - sessions.length} malformed session(s) for ${eventId} at ${path}`);
-    }
-    return sessions;
-  } catch (err) {
-    debugLog(`Failed to parse sessions for ${eventId}: ${err instanceof Error ? err.message : String(err)}`);
+    return JSON.parse(await readFile(path, 'utf-8')) as Session[];
+  } catch {
     return [];
   }
 }

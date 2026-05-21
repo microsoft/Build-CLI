@@ -7,9 +7,7 @@ import { ensureCache } from '../src/commands/common.js';
 import { refresh } from '../src/commands/refresh.js';
 import {
   getAllCachedSessions,
-  isCacheCheckDue,
   readMeta,
-  readSessions,
 } from '../src/data/cache.js';
 import type { CacheMeta, RawSession, Session } from '../src/contracts.js';
 
@@ -110,7 +108,6 @@ describe('automatic cache revalidation', () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     delete process.env.MSEVENTS_CACHE_DIR;
-    delete process.env.MSEVENTS_DEBUG;
     delete process.env.MSEVENTS_MAX_RESPONSE_BYTES;
     await rm(cacheDir, { recursive: true, force: true });
   });
@@ -437,36 +434,6 @@ describe('automatic cache revalidation', () => {
       );
     });
 
-  it('discards malformed metadata and invalid cached sessions without throwing', async () => {
-    await writeFile(join(cacheDir, 'build-2026-meta.json'), '{"eventId": 1}');
-    await writeFile(
-      join(cacheDir, 'build-2026-sessions.json'),
-      '[{"sessionCode":"../../etc/passwd","event":"build-2026"}]',
-    );
-    process.env.MSEVENTS_DEBUG = '1';
-
-    expect(await readMeta('build-2026')).toBeNull();
-    expect(await readSessions('build-2026')).toEqual([]);
-    expect(stderrOutput()).toContain('Discarding malformed meta');
-    expect(stderrOutput()).toContain('Discarded 1 malformed session(s)');
-  });
-
-  it('coerces partial cached sessions for forward compatibility', async () => {
-    await writeFile(
-      join(cacheDir, 'build-2026-sessions.json'),
-      '[{"sessionCode":"BRK101","title":"Cached","unknownFutureField":"ignored"}]',
-    );
-
-    expect(await readSessions('build-2026')).toEqual([
-      expect.objectContaining({
-        sessionCode: 'BRK101',
-        title: 'Cached',
-        description: '',
-        event: 'build-2026',
-      }),
-    ]);
-  });
-
   it('writes cache files atomically without leaving temp files on success', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
       [{ sessionCode: 'BRK202', title: 'Build 2026 session' }],
@@ -480,16 +447,6 @@ describe('automatic cache revalidation', () => {
     expect(() => JSON.parse(raw)).not.toThrow();
     const entries = await readdir(cacheDir);
     expect(entries.some((entry) => entry.includes('.tmp.'))).toBe(false);
-  });
-
-  it('caps far-future nextCheckAt values at 48 hours after the last check', () => {
-    const cachedMeta = meta('build-2026', {
-      checkedAt: '2026-05-07T00:00:00.000Z',
-      nextCheckAt: '9999-01-01T00:00:00.000Z',
-    });
-
-    expect(isCacheCheckDue(cachedMeta, new Date('2026-05-08T23:59:00.000Z'))).toBe(false);
-    expect(isCacheCheckDue(cachedMeta, new Date('2026-05-09T00:01:00.000Z'))).toBe(true);
   });
 
   it('falls back to stale cache when safe fetch rejects', async () => {
@@ -535,7 +492,6 @@ describe('automatic cache revalidation', () => {
       nextCheckAt: '2026-05-07T02:00:00.000Z',
     });
     vi.stubGlobal('fetch', async () => jsonResponse([
-      { sessionCode: '../../etc/passwd', title: 'Invalid' },
       { title: 'Missing code' },
     ]));
 
