@@ -70,6 +70,46 @@ describe('normalizeSession', () => {
     expect(typeof session!.onDemand).toBe('string');
     expect(typeof session!.slideDeck).toBe('string');
   });
+
+  it('strips control sequences while preserving useful whitespace', () => {
+    const session = normalizeSession({
+      sessionCode: 'BRK999',
+      title: '\x1B[31mEvil\x1B[0m Title',
+      description: 'line 1\nline 2\x1B]52;c;PWNED\x07',
+    }, 'build-2026');
+
+    expect(session!.title).toBe('Evil Title');
+    expect(session!.description).toBe('line 1\nline 2');
+  });
+
+  it('caps oversized fields at 64 KB', () => {
+    const session = normalizeSession({
+      sessionCode: 'BRK999',
+      description: 'a'.repeat(200_000),
+    }, 'build-2026');
+
+    expect(session!.description).toHaveLength(64 * 1024);
+  });
+
+  it('drops malformed session codes', () => {
+    expect(normalizeSession({ sessionCode: '../../etc/passwd' }, 'build-2026')).toBeNull();
+    expect(normalizeSession({ sessionCode: 'BRK 999' }, 'build-2026')).toBeNull();
+    expect(normalizeSession({ sessionCode: '' }, 'build-2026')).toBeNull();
+  });
+
+  it('ignores prototype-chain displayValue fields', () => {
+    try {
+      (Object.prototype as Record<string, unknown>).displayValue = 'pwned';
+      const session = normalizeSession({
+        sessionCode: 'BRK999',
+        location: {} as never,
+      }, 'build-2026');
+
+      expect(session!.location).toBe('');
+    } finally {
+      delete (Object.prototype as Record<string, unknown>).displayValue;
+    }
+  });
 });
 
 describe('normalizeCatalog', () => {
@@ -84,5 +124,16 @@ describe('normalizeCatalog', () => {
     const lab344variants = sessions.filter((s) => s.sessionCode.startsWith('LAB344'));
     // LAB344 and LAB344-R1 should both exist
     expect(lab344variants.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('skips non-object catalog entries', () => {
+    const sessions = normalizeCatalog([
+      null,
+      'bad',
+      { sessionCode: 'BRK999', title: 'Valid' },
+    ], 'build-2026');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.sessionCode).toBe('BRK999');
   });
 });

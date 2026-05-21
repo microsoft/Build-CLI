@@ -1,59 +1,95 @@
 import type { Session, SearchResult, CacheMeta } from '../contracts.js';
+import { stripControlSequences as S } from '../data/sanitize.js';
+
+function sanitizeSession(s: Session): Session {
+  return {
+    sessionCode: S(s.sessionCode),
+    title: S(s.title),
+    description: S(s.description),
+    speakers: S(s.speakers),
+    timeSlot: S(s.timeSlot),
+    startDateTime: S(s.startDateTime),
+    endDateTime: S(s.endDateTime),
+    location: S(s.location),
+    level: S(s.level),
+    type: S(s.type),
+    topic: S(s.topic),
+    solutionArea: S(s.solutionArea),
+    product: S(s.product),
+    languages: S(s.languages),
+    tags: S(s.tags),
+    relatedSessionCodes: S(s.relatedSessionCodes),
+    slideDeck: S(s.slideDeck),
+    onDemand: S(s.onDemand),
+    event: S(s.event),
+  };
+}
 
 export function formatSessionShort(s: Session): string {
-  const parts = [`[${s.sessionCode}] ${s.title}`];
-  parts.push(`  Type: ${s.type || 'N/A'} | Level: ${s.level || 'N/A'} | Event: ${s.event}`);
-  if (s.speakers) parts.push(`  Speaker(s): ${s.speakers}`);
-  if (s.startDateTime) {
-    const d = new Date(s.startDateTime);
-    const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    parts.push(`  When: ${date}, ${s.timeSlot || d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
-  } else if (s.timeSlot) {
-    parts.push(`  When: ${s.timeSlot}`);
+  const clean = sanitizeSession(s);
+  const parts = [`[${clean.sessionCode}] ${clean.title}`];
+  parts.push(`  Type: ${clean.type || 'N/A'} | Level: ${clean.level || 'N/A'} | Event: ${clean.event}`);
+  if (clean.speakers) parts.push(`  Speaker(s): ${clean.speakers}`);
+  if (clean.startDateTime) {
+    const d = new Date(clean.startDateTime);
+    if (Number.isFinite(d.getTime())) {
+      const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      parts.push(`  When: ${date}, ${clean.timeSlot || d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
+    } else if (clean.timeSlot) {
+      parts.push(`  When: ${clean.timeSlot}`);
+    } else {
+      parts.push(`  When: ${clean.startDateTime}`);
+    }
+  } else if (clean.timeSlot) {
+    parts.push(`  When: ${clean.timeSlot}`);
   }
-  if (s.location) parts.push(`  Location: ${s.location}`);
+  if (clean.location) parts.push(`  Location: ${clean.location}`);
   const links = [];
-  if (s.onDemand) links.push('On-demand');
-  if (s.slideDeck) links.push('Slides');
+  if (clean.onDemand) links.push('On-demand');
+  if (clean.slideDeck) links.push('Slides');
   if (links.length) parts.push(`  Links: ${links.join(', ')}`);
   return parts.join('\n');
 }
 
 export function formatSessionFull(s: Session): string {
+  const clean = sanitizeSession(s);
   const lines = [
-    `# [${s.sessionCode}] ${s.title}`,
+    `# [${clean.sessionCode}] ${clean.title}`,
     '',
-    `Type: ${s.type || 'N/A'}`,
-    `Level: ${s.level || 'N/A'}`,
-    `Event: ${s.event}`,
+    `Type: ${clean.type || 'N/A'}`,
+    `Level: ${clean.level || 'N/A'}`,
+    `Event: ${clean.event}`,
   ];
-  if (s.speakers) lines.push(`Speaker(s): ${s.speakers}`);
-  if (s.timeSlot) lines.push(`When: ${s.timeSlot}`);
-  if (s.startDateTime) lines.push(`Start: ${s.startDateTime}`);
-  if (s.endDateTime) lines.push(`End: ${s.endDateTime}`);
-  if (s.location) lines.push(`Location: ${s.location}`);
-  if (s.topic) lines.push(`Topic: ${s.topic}`);
-  if (s.solutionArea) lines.push(`Solution area: ${s.solutionArea}`);
-  if (s.product) lines.push(`Product: ${s.product}`);
-  if (s.languages) lines.push(`Languages: ${s.languages}`);
-  if (s.tags) lines.push(`Tags: ${s.tags}`);
-  if (s.relatedSessionCodes) lines.push(`Related sessions: ${s.relatedSessionCodes}`);
+  if (clean.speakers) lines.push(`Speaker(s): ${clean.speakers}`);
+  if (clean.timeSlot) lines.push(`When: ${clean.timeSlot}`);
+  if (clean.startDateTime) lines.push(`Start: ${clean.startDateTime}`);
+  if (clean.endDateTime) lines.push(`End: ${clean.endDateTime}`);
+  if (clean.location) lines.push(`Location: ${clean.location}`);
+  if (clean.topic) lines.push(`Topic: ${clean.topic}`);
+  if (clean.solutionArea) lines.push(`Solution area: ${clean.solutionArea}`);
+  if (clean.product) lines.push(`Product: ${clean.product}`);
+  if (clean.languages) lines.push(`Languages: ${clean.languages}`);
+  if (clean.tags) lines.push(`Tags: ${clean.tags}`);
+  if (clean.relatedSessionCodes) lines.push(`Related sessions: ${clean.relatedSessionCodes}`);
   lines.push('');
-  if (s.description) lines.push(s.description);
-  if (s.onDemand) lines.push(`\nOn-demand: ${s.onDemand}`);
-  if (s.slideDeck) lines.push(`Slides: ${s.slideDeck}`);
+  if (clean.description) lines.push(clean.description);
+  if (clean.onDemand) lines.push(`\nOn-demand: ${clean.onDemand}`);
+  if (clean.slideDeck) lines.push(`Slides: ${clean.slideDeck}`);
   return lines.join('\n');
 }
 
 export function formatSearchResults(results: SearchResult[], json: boolean): string {
-  if (json) return JSON.stringify(results.map((r) => r.session), null, 2);
+  if (json) return JSON.stringify(results.map((r) => sanitizeSession(r.session)), null, 2);
   if (results.length === 0) return 'No sessions found.';
   return `Found ${results.length} session(s):\n\n` +
     results.map((r) => formatSessionShort(r.session)).join('\n\n');
 }
 
 export function formatSessionDetail(sessions: Session[], json: boolean): string {
-  if (json) return JSON.stringify(sessions.length === 1 ? sessions[0] : sessions, null, 2);
+  if (json) {
+    const clean = sessions.map(sanitizeSession);
+    return JSON.stringify(clean.length === 1 ? clean[0] : clean, null, 2);
+  }
   if (sessions.length === 0) return 'Session not found.';
   if (sessions.length === 1) return formatSessionFull(sessions[0]!);
   // Disambiguation
