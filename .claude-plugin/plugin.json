@@ -1,7 +1,7 @@
 {
   "name": "microsoft-events",
   "description": "Connect your project to Microsoft Build and Ignite sessions — discover relevant talks, explore what's new for your stack, and plan next steps from your development environment.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": {
     "name": "Microsoft"
   },

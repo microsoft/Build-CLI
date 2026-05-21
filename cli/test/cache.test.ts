@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { existsSync } from 'node:fs';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { ensureCache } from '../src/commands/common.js';
 import { refresh } from '../src/commands/refresh.js';
-import { getAllCachedSessions, readMeta } from '../src/data/cache.js';
+import {
+  getAllCachedSessions,
+  readMeta,
+} from '../src/data/cache.js';
 import type { CacheMeta, RawSession, Session } from '../src/contracts.js';
 
 const NOW = '2026-05-07T03:00:00.000Z';
@@ -105,6 +108,7 @@ describe('automatic cache revalidation', () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     delete process.env.MSEVENTS_CACHE_DIR;
+    delete process.env.MSEVENTS_MAX_RESPONSE_BYTES;
     await rm(cacheDir, { recursive: true, force: true });
   });
 
@@ -427,6 +431,74 @@ describe('automatic cache revalidation', () => {
     expect(stderrOutput()).toContain(
       'failed: https://aka.ms/build2026-session-info ' +
         'returned 304 without a usable local cache',
-    );
+      );
+    });
+
+  it('writes cache files atomically without leaving temp files on success', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
+      [{ sessionCode: 'BRK202', title: 'Build 2026 session' }],
+      { etag: '"2026"', 'last-modified': 'Thu, 07 May 2026 02:56:00 GMT' },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await ensureCache('build-2026');
+
+    const raw = await readFile(join(cacheDir, 'build-2026-sessions.json'), 'utf-8');
+    expect(() => JSON.parse(raw)).not.toThrow();
+    const entries = await readdir(cacheDir);
+    expect(entries.some((entry) => entry.includes('.tmp.'))).toBe(false);
+  });
+
+  it('falls back to stale cache when safe fetch rejects', async () => {
+    await writeCachedEvent('build-2026', {
+      checkedAt: '2026-05-07T01:00:00.000Z',
+      nextCheckAt: '2026-05-07T02:00:00.000Z',
+    });
+    const timeout = new Error('aborted');
+    timeout.name = 'TimeoutError';
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timeout));
+
+    const sessions = await ensureCache('build-2026');
+
+    expect(sessions).toHaveLength(1);
+    const updatedMeta = await readMeta('build-2026');
+    expect(updatedMeta?.lastCheckStatus).toBe('failed');
+  });
+
+  it('treats oversized remote responses as fetch failures and keeps stale cache', async () => {
+    await writeCachedEvent('build-2026', {
+      checkedAt: '2026-05-07T01:00:00.000Z',
+      nextCheckAt: '2026-05-07T02:00:00.000Z',
+    });
+    vi.stubGlobal('fetch', async () => new Response('[]', {
+      status: 200,
+      headers: {
+        'content-type': 'application/json',
+        'content-length': '999999',
+      },
+    }));
+    process.env.MSEVENTS_MAX_RESPONSE_BYTES = '10';
+
+    const sessions = await ensureCache('build-2026');
+
+    expect(sessions).toHaveLength(1);
+    const updatedMeta = await readMeta('build-2026');
+    expect(updatedMeta?.lastCheckStatus).toBe('failed');
+  });
+
+  it('treats catalogs with no valid sessions as fetch failures', async () => {
+    await writeCachedEvent('build-2026', {
+      checkedAt: '2026-05-07T01:00:00.000Z',
+      nextCheckAt: '2026-05-07T02:00:00.000Z',
+    });
+    vi.stubGlobal('fetch', async () => jsonResponse([
+      { title: 'Missing code' },
+    ]));
+
+    const sessions = await ensureCache('build-2026');
+
+    expect(sessions).toHaveLength(1);
+    const updatedMeta = await readMeta('build-2026');
+    expect(updatedMeta?.lastCheckStatus).toBe('failed');
   });
 });

@@ -83,6 +83,14 @@ Use `--event <id>` to filter to a single event. Without it, commands search acro
 - **Disambiguation**: if a session code exists in multiple events, the CLI shows options.
 - **Results**: 10 by default, `--limit` to override.
 
+## Environment variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `MSEVENTS_CACHE_DIR` | per-OS cache path | Override the local cache directory. |
+| `MSEVENTS_FETCH_TIMEOUT_MS` | `30000` | Abort catalog requests after this many milliseconds. |
+| `MSEVENTS_MAX_RESPONSE_BYTES` | `52428800` (50 MiB) | Reject catalog responses larger than this. |
+
 ## Development
 
 To build and test from source:

@@ -85,4 +85,5 @@ describe('normalizeCatalog', () => {
     // LAB344 and LAB344-R1 should both exist
     expect(lab344variants.length).toBeGreaterThanOrEqual(1);
   });
+
 });

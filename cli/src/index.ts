@@ -6,7 +6,7 @@ import { refresh } from './commands/refresh.js';
 import { sessions } from './commands/sessions.js';
 import { session } from './commands/session.js';
 import { status } from './commands/status.js';
-import { validateEventId } from './commands/common.js';
+import { validateEventId, validateLimit } from './commands/common.js';
 import { KNOWN_EVENTS } from './config.js';
 
 const knownIds = KNOWN_EVENTS.map((e) => e.id).join(', ');
@@ -86,7 +86,9 @@ Examples:
       return;
     }
     if (opts.event && !validateEventId(opts.event)) return;
-    await sessions({ ...opts, limit: parseInt(opts.limit, 10) });
+    const limit = validateLimit(opts.limit);
+    if (limit === null) return;
+    await sessions({ ...opts, limit });
   });
 
 program
