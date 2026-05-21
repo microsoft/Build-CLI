@@ -1,14 +1,21 @@
 {
-  "name": "microsoft-events",
+  "keywords": [
+    "microsoft",
+    "build",
+    "ignite",
+    "events",
+    "sessions",
+    "learn"
+  ],
+  "version": "1.0.5",
   "description": "Connect your project to Microsoft Build and Ignite sessions — discover relevant talks, explore what's new for your stack, and plan next steps from your development environment.",
-  "version": "1.0.4",
+  "skills": "skills/",
   "author": {
-    "name": "Microsoft",
-    "url": "https://www.microsoft.com"
+    "url": "https://www.microsoft.com",
+    "name": "Microsoft"
   },
-  "homepage": "https://github.com/microsoft/Build-CLI",
-  "keywords": ["microsoft", "build", "ignite", "events", "sessions", "learn"],
-  "license": "Apache-2.0",
   "repository": "https://github.com/microsoft/Build-CLI",
-  "skills": "skills/"
+  "name": "microsoft-events",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/microsoft/Build-CLI"
 }
