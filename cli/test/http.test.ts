@@ -47,8 +47,17 @@ describe('safeFetchJson', () => {
       .rejects.toThrow(/Unexpected Content-Type/);
   });
 
-  it('returns non-2xx without reading the response body', async () => {
-    vi.stubGlobal('fetch', async () => new Response('<html>' + 'x'.repeat(10_000) + '</html>', {
+  it('returns non-2xx without reading the response body and cancels it', async () => {
+    let canceled = false;
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('<html>' + 'x'.repeat(10_000) + '</html>'));
+      },
+      cancel() {
+        canceled = true;
+      },
+    });
+    vi.stubGlobal('fetch', async () => new Response(stream, {
       status: 503,
       statusText: 'Service Unavailable',
       headers: { 'content-type': 'text/html' },
@@ -59,6 +68,7 @@ describe('safeFetchJson', () => {
     expect(result.status).toBe(503);
     expect(result.statusText).toBe('Service Unavailable');
     expect(result.body).toBeNull();
+    expect(canceled).toBe(true);
   });
 
   it('rejects declared oversized responses', async () => {

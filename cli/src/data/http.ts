@@ -24,6 +24,17 @@ function envInt(name: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+async function resultWithoutBody(response: Response): Promise<SafeFetchResult> {
+  await response.body?.cancel();
+  return {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+    body: null,
+    finalUrl: response.url,
+  };
+}
+
 export async function safeFetchJson(
   url: string,
   options: SafeFetchOptions = {},
@@ -51,23 +62,11 @@ export async function safeFetchJson(
   }
 
   if (response.status === 304) {
-    return {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      body: null,
-      finalUrl: response.url,
-    };
+    return resultWithoutBody(response);
   }
 
   if (!response.ok) {
-    return {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      body: null,
-      finalUrl: response.url,
-    };
+    return resultWithoutBody(response);
   }
 
   const contentLength = response.headers.get('content-length');
