@@ -208,8 +208,8 @@ The user wants to know what recent Microsoft updates are relevant to their proje
 
 1. Scan the user's project for tech stack signals: package.json, requirements.txt, .csproj, go.mod, Dockerfile, bicep/terraform files, .github/workflows
 2. Extract dependencies, frameworks, and services in use
-3. If a recent event is active or recent, fetch the news and announcements page to discover announcements relevant to the inventory. This surfaces product launches, GA announcements, and preview features that may not yet appear in Learn what's-new pages or session titles.
-4. Query Learn MCP Server for recent what's-new pages, SDK updates, and migration guides for each identified dependency. Include any announcements discovered via the news and announcements page.
+3. If a recent event is active or recent, fetch the News & Announcements page to discover announcements relevant to the inventory. This surfaces product launches, GA announcements, and preview features that may not yet appear in Learn what's-new pages or session titles.
+4. Query Learn MCP Server for recent what's-new pages, SDK updates, and migration guides for each identified dependency. Include any announcements discovered via the News & Announcements page.
 5. Search for relevant sessions:
    - **With CLI**: Run `npx -y @microsoft/events-cli sessions --tech "[product]" --event build-2026 --json` for each major technology in the inventory
    - **Without CLI**: Fetch the catalog once and match against `product`, `topic`, `tags`, and `programmingLanguages` fields
