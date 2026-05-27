@@ -28,6 +28,8 @@ The skill reads `package.json`, `requirements.txt`, `.csproj`, `go.mod`, and oth
 
 ## What You Can Do
 
+📺 **[Watch the overview video](https://www.youtube.com/watch?v=gm8gKtrd3po)** to see it in action.
+
 ### Before Build — plan your schedule
 
 | Ask the skill to…                        | Example                                               |
