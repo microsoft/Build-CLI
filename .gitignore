@@ -428,3 +428,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# APM (Agent Package Manager) downloaded dependencies
+apm_modules/
+apm.lock.yaml

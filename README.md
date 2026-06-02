@@ -69,6 +69,9 @@ Session results are a starting point. For broad topics, ask the agent to refine 
 | VS Code | Open Extensions (Ctrl+Shift+X), search `@agentPlugins microsoft-events`, and install |
 | Visual Studio 2026 | Copy `skills/microsoft-build/` to a [supported skill location](https://learn.microsoft.com/visualstudio/ide/copilot-agent-skills) |
 | Claude Code | `/plugin marketplace add microsoft/Build-CLI` then `/plugin install microsoft-events@microsoft-events-marketplace` |
+| APM | `apm install microsoft/Build-CLI` |
+
+> **What is APM?** [APM (Agent Package Manager)](https://github.com/nicepkg/apm) is to AI agent skills what npm is to JavaScript packages — it lets you install, version, and share reusable agent instructions, skills, and MCP configurations across projects with a single command.
 
 ## Scope and Limitations
 
