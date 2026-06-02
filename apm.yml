@@ -23,7 +23,7 @@ marketplace:
     homepage: https://github.com/microsoft/Build-CLI
   build:
     tagPattern: "v{version}"
-  plugins:
+  packages:
     - name: microsoft-events
       description: >-
         Connect your project to Microsoft Build and Ignite sessions — discover
