@@ -69,9 +69,47 @@ Session results are a starting point. For broad topics, ask the agent to refine 
 | VS Code | Open Extensions (Ctrl+Shift+X), search `@agentPlugins microsoft-events`, and install |
 | Visual Studio 2026 | Copy `skills/microsoft-build/` to a [supported skill location](https://learn.microsoft.com/visualstudio/ide/copilot-agent-skills) |
 | Claude Code | `/plugin marketplace add microsoft/Build-CLI` then `/plugin install microsoft-events@microsoft-events-marketplace` |
-| APM | `apm install microsoft/Build-CLI` |
+| APM | See [Install with APM](#install-with-apm) below |
 
-> **What is APM?** [APM (Agent Package Manager)](https://github.com/nicepkg/apm) is to AI agent skills what npm is to JavaScript packages — it lets you install, version, and share reusable agent instructions, skills, and MCP configurations across projects with a single command.
+## Install with APM
+
+[APM (Agent Package Manager)](https://github.com/microsoft/apm) is to AI agent skills what npm is to JavaScript packages — it lets you install, version, and share reusable agent instructions, skills, and MCP configurations across projects with a single command.
+
+### Prerequisites
+
+Install APM (one-time):
+
+```bash
+# macOS / Linux
+curl -sSL https://aka.ms/apm-unix | sh
+
+# Windows (PowerShell)
+irm https://aka.ms/apm-windows | iex
+
+# Or via Homebrew
+brew install microsoft/apm/apm
+```
+
+### Global install (all projects)
+
+```bash
+# Both Claude Code and GitHub Copilot
+apm install -g microsoft/Build-CLI#v1.0.5 --target claude,copilot
+
+# Claude Code only
+apm install -g microsoft/Build-CLI#v1.0.5 --target claude
+
+# GitHub Copilot only
+apm install -g microsoft/Build-CLI#v1.0.5 --target copilot
+```
+
+### Verify, update, and uninstall
+
+```bash
+apm deps list -g              # List globally installed packages
+apm outdated -g               # Check for updates
+apm uninstall -g microsoft/Build-CLI   # Remove
+```
 
 ## Scope and Limitations
 
