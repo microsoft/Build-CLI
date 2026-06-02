@@ -12,7 +12,7 @@ A [GitHub Copilot CLI](https://github.com/features/copilot/cli/) skill that conn
    ```
    Or install globally with [APM](https://github.com/microsoft/apm):
    ```
-   apm install -g microsoft/Build-CLI --target claude,copilot
+   apm install -g microsoft/Build-CLI#v1.0.5 --target claude,copilot
    ```
 2. Restart your Copilot CLI session:
    ```

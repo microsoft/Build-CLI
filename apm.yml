@@ -30,4 +30,4 @@ marketplace:
         relevant talks, explore what's new for your stack, and plan next steps
         from your development environment.
       source: ./
-      version: "1.0.5"
+      version: "1.0.5" # keep in sync with top-level version
