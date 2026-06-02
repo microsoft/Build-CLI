@@ -10,6 +10,10 @@ A [GitHub Copilot CLI](https://github.com/features/copilot/cli/) skill that conn
    ```
    /plugin install microsoft/Build-CLI
    ```
+   Or install globally with [APM](https://github.com/microsoft/apm):
+   ```
+   apm install -g microsoft/Build-CLI --target claude,copilot
+   ```
 2. Restart your Copilot CLI session:
    ```
    /restart
