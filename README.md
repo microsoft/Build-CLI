@@ -75,21 +75,6 @@ Session results are a starting point. For broad topics, ask the agent to refine 
 
 [APM (Agent Package Manager)](https://github.com/microsoft/apm) is to AI agent skills what npm is to JavaScript packages — it lets you install, version, and share reusable agent instructions, skills, and MCP configurations across projects with a single command.
 
-### Prerequisites
-
-Install APM (one-time):
-
-```bash
-# macOS / Linux
-curl -sSL https://aka.ms/apm-unix | sh
-
-# Windows (PowerShell)
-irm https://aka.ms/apm-windows | iex
-
-# Or via Homebrew
-brew install microsoft/apm/apm
-```
-
 ### Global install (all projects)
 
 ```bash
