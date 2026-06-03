@@ -3,6 +3,7 @@ import type { Session, SearchResult, CacheMeta } from '../contracts.js';
 export function formatSessionShort(s: Session): string {
   const parts = [`[${s.sessionCode}] ${s.title}`];
   parts.push(`  Type: ${s.type || 'N/A'} | Level: ${s.level || 'N/A'} | Event: ${s.event}`);
+  if (s.deliveryTypes) parts.push(`  Delivery: ${s.deliveryTypes}`);
   if (s.speakers) parts.push(`  Speaker(s): ${s.speakers}`);
   if (s.startDateTime) {
     const d = new Date(s.startDateTime);
@@ -37,6 +38,10 @@ export function formatSessionFull(s: Session): string {
   if (s.product) lines.push(`Product: ${s.product}`);
   if (s.languages) lines.push(`Languages: ${s.languages}`);
   if (s.tags) lines.push(`Tags: ${s.tags}`);
+  if (s.deliveryTypes) lines.push(`Delivery: ${s.deliveryTypes}`);
+  if (s.viewingOptions) lines.push(`Viewing: ${s.viewingOptions}`);
+  lines.push(`Live stream: ${s.hasLiveStream ? 'Yes' : 'No'}`);
+  lines.push(`On-demand: ${s.hasOnDemand ? 'Yes' : 'No'}`);
   if (s.relatedSessionCodes) lines.push(`Related sessions: ${s.relatedSessionCodes}`);
   lines.push('');
   if (s.description) lines.push(s.description);
