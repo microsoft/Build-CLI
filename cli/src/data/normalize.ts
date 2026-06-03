@@ -50,6 +50,10 @@ export function normalizeSession(raw: RawSession, eventId: string): Session | nu
     product: extractDisplayValues(raw.product),
     languages: extractDisplayValues(raw.programmingLanguages),
     tags: extractDisplayValues(raw.tags),
+    deliveryTypes: extractDisplayValues(raw.deliveryTypes),
+    viewingOptions: extractDisplayValues(raw.viewingOptions),
+    hasLiveStream: !!raw.hasLiveStream,
+    hasOnDemand: !!raw.hasOnDemand,
     relatedSessionCodes: Array.isArray(raw.relatedSessionCodes)
       ? raw.relatedSessionCodes.join(', ')
       : '',

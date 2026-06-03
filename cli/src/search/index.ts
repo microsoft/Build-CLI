@@ -24,6 +24,7 @@ export function buildIndex(sessions: Session[]): void {
       'sessionCode', 'title', 'description', 'speakers', 'timeSlot',
       'startDateTime', 'endDateTime', 'location', 'level', 'type',
       'topic', 'solutionArea', 'product', 'languages', 'tags',
+      'deliveryTypes', 'viewingOptions', 'hasLiveStream', 'hasOnDemand',
       'relatedSessionCodes', 'slideDeck', 'onDemand', 'event',
     ],
     idField: 'sessionCode',

@@ -173,6 +173,10 @@ The response is a JSON array of session objects. Key fields:
 | `relatedSessionCodes` | Related session IDs |
 | `slideDeck` | Slide deck URL (when available) |
 | `onDemand` | On-demand video URL (when available) |
+| `deliveryTypes` | How the session is delivered (e.g., "In-person", "Online") |
+| `viewingOptions` | Recording status (e.g., "Will be recorded", "Will not be recorded") |
+| `hasLiveStream` | Whether the session has a live stream (boolean) |
+| `hasOnDemand` | Whether on-demand video will be available (boolean) |
 
 When using direct fetch: fetch once per conversation, filter for all technologies in the inventory in the same step, carry forward only matched sessions.
 
@@ -316,9 +320,10 @@ The user wants to understand a specific session.
 1. Look up the session:
    - **With CLI**: `npx -y @microsoft/events-cli session [ID] --event build-2026 --json`
    - **Without CLI**: Fetch the catalog and find by code or title
-2. Present: title, speakers, abstract, session type, level, time slot, location, related sessions
+2. Present: title, speakers, abstract, session type, level, time slot, location, delivery type, viewing options, related sessions
 3. If the session covers specific products or technologies, search Learn MCP for current docs on those topics
 4. Link to slides or on-demand video if available
+5. If the user is remote, highlight whether the session is online, has a live stream, or will be available on-demand
 
 **Output format:**
 ```

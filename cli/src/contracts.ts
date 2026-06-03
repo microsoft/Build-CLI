@@ -18,6 +18,10 @@ export interface RawSession {
   product?: Array<{ displayValue?: string; logicalValue?: string } | string>;
   programmingLanguages?: Array<{ displayValue?: string; logicalValue?: string } | string>;
   tags?: Array<{ displayValue?: string; logicalValue?: string } | string>;
+  deliveryTypes?: Array<{ displayValue?: string; logicalValue?: string } | string>;
+  viewingOptions?: Array<{ displayValue?: string; logicalValue?: string } | string>;
+  hasLiveStream?: boolean;
+  hasOnDemand?: boolean;
   relatedSessionCodes?: string[];
   slideDeck?: string;
   onDemand?: string;
@@ -40,6 +44,10 @@ export interface Session {
   product: string;
   languages: string;
   tags: string;
+  deliveryTypes: string;
+  viewingOptions: string;
+  hasLiveStream: boolean;
+  hasOnDemand: boolean;
   relatedSessionCodes: string;
   slideDeck: string;
   onDemand: string;
