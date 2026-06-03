@@ -64,6 +64,8 @@ export type CacheCheckStatus = 'updated' | 'not-modified' | 'failed';
 
 export interface CacheMeta {
   eventId: string;
+  /** Cache schema version — triggers a full re-fetch when it doesn't match the CLI's current version. */
+  schemaVersion?: number;
   /**
    * When session content was last downloaded and written locally.
    * Kept as fetchedAt for compatibility with existing cache metadata.
