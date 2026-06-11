@@ -64,8 +64,8 @@ The "what's new for my project" workflow works year-round — Learn MCP Server a
 
 Two live data sources, no static files:
 
-1. Learn MCP Server — current SDK docs, API references, what's-new pages, quickstarts, code samples (always available)
-2. Event session catalog — accessed via the msevents CLI for local search, caching, and multi-event support
+1. **Learn MCP Server (required)** — current SDK docs, API references, what's-new pages, quickstarts, code samples (always available). Every response that references documentation must use this source.
+2. **Event session catalog** — accessed via the msevents CLI for local search, caching, and multi-event support
 
 > Golden rule: session metadata comes from the live catalog (via CLI or endpoint); SDK docs, API references, and code samples come from Learn MCP Server. Never fabricate session IDs, speaker names, or schedule data.
 
@@ -89,6 +89,30 @@ Do not activate when the user:
 
 - Asks general Azure architecture questions unrelated to recent updates
 - Asks you to register for sessions or manage their event account
+
+## Documentation source: Learn MCP Server (required)
+
+**Every response that references SDK features, API behavior, or documentation MUST include results from Learn MCP tools.** If Learn MCP tools are available and you skip them, your answer is incomplete. Treat Learn MCP as the default documentation layer — not an optional extra.
+
+| Tool | When to use |
+|------|-------------|
+| `microsoft_docs_search` | Find current docs for an SDK, service, or feature |
+| `microsoft_docs_fetch` | Read full documentation page for a specific topic |
+| `microsoft_code_sample_search` | Find official code samples |
+
+**If Learn MCP tools are not available** (MCP server not configured), fall back to the `mslearn` CLI:
+
+```sh
+npx @microsoft/learn-cli search "azure functions timeout"
+npx @microsoft/learn-cli fetch "https://learn.microsoft.com/..." --section "Configuration" --max-chars 5000
+npx @microsoft/learn-cli code-search "azure openai streaming"
+```
+
+| MCP tool | CLI equivalent |
+|----------|---------------|
+| `microsoft_docs_search(query: "...")` | `mslearn search "..."` |
+| `microsoft_docs_fetch(url: "...")` | `mslearn fetch "..." [--section heading] [--max-chars N]` |
+| `microsoft_code_sample_search(query: "...")` | `mslearn code-search "..."` |
 
 ## Session catalog access
 
@@ -179,30 +203,6 @@ The response is a JSON array of session objects. Key fields:
 | `hasOnDemand` | Whether on-demand video will be available (boolean) |
 
 When using direct fetch: fetch once per conversation, filter for all technologies in the inventory in the same step, carry forward only matched sessions.
-
-### Learn MCP Server (live)
-
-Use Learn MCP tools to retrieve current documentation:
-
-| Tool | When to use |
-|------|-------------|
-| `microsoft_docs_search` | Find current docs for an SDK, service, or feature |
-| `microsoft_docs_fetch` | Read full documentation page for a specific topic |
-| `microsoft_code_sample_search` | Find official code samples |
-
-**CLI fallback** — if Learn MCP tools are not available (e.g., MCP server not configured), use the `mslearn` CLI instead:
-
-```sh
-npx @microsoft/learn-cli search "azure functions timeout"
-npx @microsoft/learn-cli fetch "https://learn.microsoft.com/..." --section "Configuration" --max-chars 5000
-npx @microsoft/learn-cli code-search "azure openai streaming"
-```
-
-| MCP tool | CLI equivalent |
-|----------|---------------|
-| `microsoft_docs_search(query: "...")` | `mslearn search "..."` |
-| `microsoft_docs_fetch(url: "...")` | `mslearn fetch "..." [--section heading] [--max-chars N]` |
-| `microsoft_code_sample_search(query: "...")` | `mslearn code-search "..."` |
 
 ## Core workflows
 
