@@ -8,6 +8,7 @@ import { refresh } from '../src/commands/refresh.js';
 import {
   getAllCachedSessions,
   readMeta,
+  CACHE_SCHEMA_VERSION,
 } from '../src/data/cache.js';
 import type { CacheMeta, RawSession, Session } from '../src/contracts.js';
 
@@ -44,6 +45,7 @@ function session(event: string, sessionCode: string = 'KEY01'): Session {
 function meta(eventId: string, overrides: Partial<CacheMeta> = {}): CacheMeta {
   return {
     eventId,
+    schemaVersion: CACHE_SCHEMA_VERSION,
     fetchedAt: '2026-05-07T02:00:00.000Z',
     checkedAt: '2026-05-07T02:00:00.000Z',
     nextCheckAt: '2026-05-07T04:00:00.000Z',
@@ -504,5 +506,74 @@ describe('automatic cache revalidation', () => {
     expect(sessions).toHaveLength(1);
     const updatedMeta = await readMeta('build-2026');
     expect(updatedMeta?.lastCheckStatus).toBe('failed');
+  });
+
+  it('forces a full GET when cache schema is outdated', async () => {
+    await writeCachedEvent('build-2025', { schemaVersion: 1 });
+    await writeCachedEvent('ignite-2025');
+    await writeCachedEvent('build-2026');
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
+      [{ sessionCode: 'BRK101', title: 'Build 2025 session' }],
+      { etag: '"2025-new"', 'last-modified': 'Thu, 07 May 2026 02:55:00 GMT' },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await ensureCache();
+
+    // Should have fetched only build-2025 (outdated schema), not the others
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Should NOT send conditional headers (full GET, not revalidation)
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).not.toHaveProperty('If-None-Match');
+    expect(init.headers).not.toHaveProperty('If-Modified-Since');
+
+    const updatedMeta = await readMeta('build-2025');
+    expect(updatedMeta?.schemaVersion).toBe(CACHE_SCHEMA_VERSION);
+    expect(updatedMeta?.lastCheckStatus).toBe('updated');
+  });
+
+  it('forces a full GET when cache has no schema version (legacy cache)', async () => {
+    await writeCachedEvent('build-2026', { schemaVersion: undefined });
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
+      [{ sessionCode: 'BRK202', title: 'Build 2026 session' }],
+      { etag: '"2026"', 'last-modified': 'Thu, 07 May 2026 02:56:00 GMT' },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await ensureCache('build-2026');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).not.toHaveProperty('If-None-Match');
+
+    const updatedMeta = await readMeta('build-2026');
+    expect(updatedMeta?.schemaVersion).toBe(CACHE_SCHEMA_VERSION);
+  });
+
+  it('skips fetch when cache schema version is current', async () => {
+    await writeCachedEvent('build-2025', { schemaVersion: CACHE_SCHEMA_VERSION });
+    await writeCachedEvent('ignite-2025', { schemaVersion: CACHE_SCHEMA_VERSION });
+    await writeCachedEvent('build-2026', { schemaVersion: CACHE_SCHEMA_VERSION });
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await ensureCache();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to stale cache when schema is outdated but fetch fails', async () => {
+    await writeCachedEvent('build-2026', {
+      schemaVersion: 1,
+      checkedAt: '2026-05-07T01:00:00.000Z',
+      nextCheckAt: '2026-05-07T02:00:00.000Z',
+    });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('network down')));
+
+    const sessions = await ensureCache('build-2026');
+
+    // Should fall back to stale cache even though schema is outdated
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]?.event).toBe('build-2026');
   });
 });
