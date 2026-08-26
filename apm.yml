@@ -1,0 +1,33 @@
+name: microsoft-events
+version: 1.0.5
+description: >-
+  Connect your project to Microsoft Build and Ignite sessions — discover
+  relevant talks, explore what's new for your stack, and plan next steps
+  from your development environment.
+author: Microsoft
+license: Apache-2.0
+targets: [copilot, claude]
+
+dependencies:
+  mcp:
+    - name: microsoft-learn
+      registry: false
+      transport: http
+      url: "https://learn.microsoft.com/api/mcp"
+
+marketplace:
+  owner:
+    name: Microsoft
+    url: https://github.com/microsoft
+  metadata:
+    homepage: https://github.com/microsoft/Build-CLI
+  build:
+    tagPattern: "v{version}"
+  packages:
+    - name: microsoft-events
+      description: >-
+        Connect your project to Microsoft Build and Ignite sessions — discover
+        relevant talks, explore what's new for your stack, and plan next steps
+        from your development environment.
+      source: ./
+      version: "1.0.5" # keep in sync with top-level version
