@@ -3,18 +3,17 @@
 // scripts/msevents.mjs is the whole msevents CLI bundled into one file. Its banner turns on
 // offline mode (MSEVENTS_OFFLINE) and points the cache at ../data, so data/ is a frozen cache.
 // Run through `npm run build:snapshot` so dist/ is up to date.
-import { exec, execFile } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { delimiter, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
 import { build } from 'esbuild';
 import { KNOWN_EVENTS } from '../dist/config.js';
 
 const execFileAsync = promisify(execFile);
-const execAsync = promisify(exec);
 const cliRoot = fileURLToPath(new URL('..', import.meta.url));
 const repoRoot = resolve(cliRoot, '..');
 const SKILL_NAME = 'microsoft-build';
@@ -104,18 +103,30 @@ async function prepareOutDir(outDir) {
   await mkdir(outDir, { recursive: true });
 }
 
+const ATK_MISSING = `--package needs the Microsoft 365 Agents Toolkit CLI. Install it with: npm install -g ${ATK_PACKAGE}`;
+
+// atk is started without a shell so paths reach it unchanged. On Windows, npm installs atk as a
+// .cmd shim that Node can only start through cmd.exe, so run the package's JS entry with node instead.
+async function resolveAtk() {
+  if (process.platform !== 'win32') return { file: 'atk', args: [] };
+  for (const dir of (process.env.PATH ?? '').split(delimiter).filter(Boolean)) {
+    if (existsSync(join(dir, 'atk.exe'))) return { file: join(dir, 'atk.exe'), args: [] };
+    const pkgDir = join(dir, 'node_modules', ...ATK_PACKAGE.split('/'));
+    if (!existsSync(join(pkgDir, 'package.json'))) continue;
+    const { bin } = await readJson(join(pkgDir, 'package.json'));
+    const entry = typeof bin === 'string' ? bin : bin?.atk;
+    if (entry) return { file: process.execPath, args: [join(pkgDir, entry)] };
+  }
+  fail(ATK_MISSING);
+}
+
 async function runAtk(args, cwd) {
-  const quoted = args.map((arg) => {
-    if (arg.includes('"')) fail(`Can't pass ${arg} to atk`);
-    return `"${arg}"`;
-  });
+  const atk = await resolveAtk();
   try {
-    return await execAsync(`atk ${quoted.join(' ')}`, { cwd, timeout: 300_000, maxBuffer: 16 * MB });
+    return await execFileAsync(atk.file, [...atk.args, ...args], { cwd, timeout: 300_000, maxBuffer: 16 * MB });
   } catch (err) {
+    if (err.code === 'ENOENT') fail(ATK_MISSING);
     const output = `${err.stdout ?? ''}${err.stderr ?? ''}`.trim();
-    if (/not recognized|not found|ENOENT/i.test(output || String(err.message))) {
-      fail(`--package needs the Microsoft 365 Agents Toolkit CLI. Install it with: npm install -g ${ATK_PACKAGE}`);
-    }
     fail(`atk ${args[0]} ${args[1] ?? ''} failed:\n${output || err.message}`);
   }
 }
