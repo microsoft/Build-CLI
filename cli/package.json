@@ -12,8 +12,10 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:snapshot": "npm run build && node scripts/build-snapshot.mjs",
     "smoke:fixture": "node scripts/smoke-fixture.mjs",
     "smoke:live": "node scripts/smoke-live.mjs",
+    "smoke:snapshot": "node scripts/smoke-snapshot.mjs",
     "test": "vitest run"
   },
   "keywords": [
@@ -41,6 +43,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.0",
     "vitest": "^4.0.0"
   }

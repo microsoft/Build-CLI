@@ -11,7 +11,12 @@ import { KNOWN_EVENTS } from './config.js';
 
 const knownIds = KNOWN_EVENTS.map((e) => e.id).join(', ');
 
+// Set by bundlers that can't ship package.json next to the code (see scripts/build-snapshot.mjs).
+declare const __MSEVENTS_VERSION__: string | undefined;
+
 function readPackageVersion(): string {
+  if (typeof __MSEVENTS_VERSION__ === 'string') return __MSEVENTS_VERSION__;
+
   const packageJson: unknown = JSON.parse(
     readFileSync(new URL('../package.json', import.meta.url), 'utf-8'),
   );

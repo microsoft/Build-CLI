@@ -17,7 +17,8 @@ The repo publishes plugin metadata for GitHub Copilot and Claude Code. Keep shar
 
 ## Sync rules
 
-- Event support is duplicated by design between the CLI and skill docs. When adding, removing, or renaming events, update `cli\src\config.ts`, the supported/default event guidance in `skills\microsoft-build\SKILL.md`, and affected tests/docs together.
+- Event support is duplicated by design between the CLI and skill docs. When adding, removing, or renaming events, update `cli\src\config.ts`, the supported/default event guidance in `skills\microsoft-build\SKILL.md` and `cli\snapshot-skill\SKILL.md`, and affected tests/docs together.
+- `cli\snapshot-skill\SKILL.md` is the hand-written template for the offline Microsoft 365 Copilot Cowork snapshot. Keep its behavior rules aligned with `skills\microsoft-build\SKILL.md`, but keep it under 20,000 characters (about 5,000 tokens, Cowork's recommended maximum for a skill body) and use only `node scripts/msevents.mjs` commands (no `npx`, network, or `refresh`). Changing it doesn't need a plugin version bump; the version is set when the snapshot is built.
 - Treat `skills\microsoft-build\SKILL.md` as the product contract for event-session behavior. For Build, Ignite, or event-session work: default "Build" to `build-2026`, get session metadata from the live catalog through `msevents` or the endpoint, get SDK/API facts from Microsoft Learn MCP, and never invent session IDs, speakers, schedules, or links.
 - Versioning gate: any meaningful `skills\microsoft-build\SKILL.md` change (agent behavior, commands/examples agents may follow, supported/default events, CLI/MCP/catalog usage, or user-facing workflow guidance) must bump both versioned plugin manifests to the same value; patch bumps are fine for guidance-only changes.
 - PR review gate: GitHub Copilot/code reviewers should flag meaningful `SKILL.md` changes without synced plugin version bumps, and any plugin version drift. Typo/format-only skill edits may skip the bump only when the PR explicitly says so.
@@ -36,16 +37,20 @@ npm test
 npx vitest run test\search.test.ts
 npx vitest run test\search.test.ts -t "finds sessions by title keyword"
 npm run smoke:fixture
+npm run smoke:snapshot
+npm run build:snapshot -- --plugin-version 1.0.7 --package
 ```
 
-`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests.
+`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests. `npm run build:snapshot` also downloads live catalogs and writes the Cowork plugin to `out\cowork-plugin` (git-ignored); `--package` uses the `atk` CLI to build `out\cowork-plugin-app\appPackage\build\appPackage.zip`. Never commit generated snapshot data.
+
+The Cowork snapshot bundles `cli\src\index.ts` (the whole CLI) with esbuild. Its banner sets `MSEVENTS_OFFLINE=1` and points `MSEVENTS_CACHE_DIR` at the bundled `data\` folder, and the version comes from a build-time `__MSEVENTS_VERSION__` constant because the bundle has no `package.json`. Keep offline mode free of network calls and cache writes; `npm run smoke:snapshot` checks this with read-only data.
 
 Note: The first time `npx @microsoft/events-cli` is run, it prompts for permission and can cause CLI tool calls to hang in AI agents. In all instructions or `SKILL.md`, prefer `npx -y @microsoft/events-cli` to include the `-y` flag.
 
 ## CLI behavior contracts
 
 - Catalog data has inconsistent shapes: fields may be strings, `{ displayValue }` objects, arrays, or empty values. Normalize through the helpers in `cli\src\data\normalize.ts`; records without `sessionCode` are intentionally skipped.
-- Cache behavior is part of the CLI contract. `ensureCache` loads cached sessions, revalidates when due, fetches missing event caches, and only falls back to stale cache when the stale data is scoped to the request. Tests use `MSEVENTS_CACHE_DIR` to isolate cache state.
+- Cache behavior is part of the CLI contract. `ensureCache` loads cached sessions, revalidates when due, fetches missing event caches, and only falls back to stale cache when the stale data is scoped to the request. With `MSEVENTS_OFFLINE=1` it only reads the cache and skips uncached events; `refresh` errors and `status` reports offline. Tests use `MSEVENTS_CACHE_DIR` to isolate cache state.
 - Search behavior is intentionally specialized: the `msevents sessions` command requires `--query`, `--tech`, or `--speaker`; code-like queries exact-match session codes and variants; technology search spans product/tags/topic/solution area/languages/title/description; speaker search post-filters on the queried last name.
 
 ## General principles

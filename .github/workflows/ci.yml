@@ -46,6 +46,9 @@ jobs:
       - name: Smoke test CLI commands with cached fixture
         run: npm run smoke:fixture
 
+      - name: Smoke test offline snapshot bundle
+        run: npm run smoke:snapshot
+
       - name: Smoke test live catalog
         if: github.event_name != 'pull_request'
         run: npm run smoke:live
