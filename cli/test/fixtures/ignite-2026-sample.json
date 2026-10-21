@@ -1,0 +1,60 @@
+[
+  {
+    "sessionCode": "LAB700",
+    "title": "Accelerate Salesforce Migration with Dynamics 365 Activate",
+    "speakerNames": "Renato Leite, Poonam Thawani",
+    "TimeSlot": "15:30 - 16:45",
+    "location": { "displayValue": "Moscone West | Level 2, Room 2010", "logicalValue": "Moscone West | Level 2, Room 2010" },
+    "sessionType": { "displayValue": "Lab", "logicalValue": "Lab" },
+    "sessionLevel": [{ "displayValue": "(300) Advanced", "logicalValue": "(300) Advanced" }],
+    "product": [],
+    "tags": [{ "displayValue": "Agents", "logicalValue": "Agents" }],
+    "relatedSessionInstanceIds": ["1792443489921001wCGb-AAAAAAAAAAAAAAAAAAAA"],
+    "seatingExperience": "Reservable seating"
+  },
+  {
+    "sessionCode": "ODSP2176",
+    "title": "Build governance into your Microsoft 365 migration from the start",
+    "speakerNames": "Anthony Raymond",
+    "TimeSlot": "",
+    "location": { "displayValue": "", "logicalValue": "" },
+    "sessionType": { "displayValue": "Pre-recorded", "logicalValue": "Pre-recorded" },
+    "sessionLevel": [{ "displayValue": "(400) Expert", "logicalValue": "(400) Expert" }],
+    "product": [],
+    "tags": [
+      { "displayValue": "Governance", "logicalValue": "Governance" },
+      { "displayValue": "Microsoft 365", "logicalValue": "Microsoft 365" }
+    ],
+    "relatedSessionInstanceIds": [],
+    "seatingExperience": ""
+  },
+  {
+    "sessionCode": "BRKSP615",
+    "title": "Advance physical AI for autonomous systems with simulation",
+    "speakerNames": "VIKRAM Natarajan",
+    "TimeSlot": "17:15 - 18:00",
+    "location": { "displayValue": "Moscone West | Level 2, Room 2005", "logicalValue": "Moscone West | Level 2, Room 2005" },
+    "sessionType": { "displayValue": "Breakout", "logicalValue": "Breakout" },
+    "sessionLevel": [{ "displayValue": "(200) Intermediate", "logicalValue": "(200) Intermediate" }],
+    "product": [],
+    "tags": [
+      { "displayValue": "AI", "logicalValue": "AI" },
+      { "displayValue": "Microsoft Foundry", "logicalValue": "Microsoft Foundry" }
+    ],
+    "relatedSessionInstanceIds": [],
+    "seatingExperience": ""
+  },
+  {
+    "sessionCode": "TT1853",
+    "title": "A discussion on modern recovery strategies",
+    "speakerNames": "Kalyani Namuduri",
+    "TimeSlot": "16:00 - 16:45",
+    "location": { "displayValue": "Moscone South | Upper Mezzanine, Esplanade Ballroom, Table 17", "logicalValue": "Moscone South | Upper Mezzanine, Esplanade Ballroom, Table 17" },
+    "sessionType": { "displayValue": "Table Talk", "logicalValue": "Table Talk" },
+    "sessionLevel": [{ "displayValue": "(300) Advanced", "logicalValue": "(300) Advanced" }],
+    "product": [],
+    "tags": [{ "displayValue": "Resiliency", "logicalValue": "Resiliency" }],
+    "relatedSessionInstanceIds": [],
+    "seatingExperience": "Reservable seating"
+  }
+]
