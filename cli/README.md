@@ -105,14 +105,16 @@ npm test
 node dist/index.js --help
 ```
 
-## Offline snapshot for Microsoft 365 Copilot Cowork
+## Microsoft 365 Copilot plugin (offline)
 
-Cowork runs skill scripts in a sandbox with Node.js but no network access, so `npx -y @microsoft/events-cli` can't run there. `npm run build:snapshot` produces a Cowork-ready plugin that ships the whole `msevents` CLI as one bundled file, `scripts/msevents.mjs`, together with a frozen copy of its cache in `data/`. The bundle always runs in offline mode (`MSEVENTS_OFFLINE`) with its cache folder set to `../data/`, so search results match `msevents` for the same catalog data.
+Microsoft 365 Copilot Cowork runs skill scripts in a sandbox with Node.js but no network access, so `npx -y @microsoft/events-cli` can't run there. `npm run build:m365` produces a Cowork-ready plugin that ships the whole `msevents` CLI as one bundled file, `scripts/msevents.mjs`, together with a frozen snapshot of its cache in `data/`. The bundle always runs in offline mode (`MSEVENTS_OFFLINE`) with its cache folder set to `../data/`, so search results match `msevents` for the same catalog data.
+
+Each [M365 plugin release](https://github.com/microsoft/Build-CLI/releases) (tagged `m365-v<version>`) includes a prebuilt `microsoft-build-m365.zip` (see [Publishing the M365 plugin](#publishing-the-m365-plugin)). To build your own:
 
 ```bash
 cd cli
 npm ci
-npm run build:snapshot -- --plugin-version 1.0.7 --package
+npm run build:m365 -- --plugin-version 1.0.7 --package
 ```
 
 | Option | Default | Purpose |
@@ -120,26 +122,33 @@ npm run build:snapshot -- --plugin-version 1.0.7 --package
 | `--plugin-version <x.y[.z]>` | repo plugin version | Plugin version. Cowork rejects versions starting with `0` and requires a higher version for every reinstall. |
 | `--package` | off | Also build the installable app package zip with the [Microsoft 365 Agents Toolkit CLI](https://www.npmjs.com/package/@microsoft/m365agentstoolkit-cli) (`npm install -g @microsoft/m365agentstoolkit-cli`). |
 | `--event <id>` | all supported events | Event to include; repeat for more than one. |
-| `--out <dir>` | `<repo>/out/cowork-plugin` | Plugin output folder (git-ignored). `--package` writes the app project to `<out>-app`. Only previous outputs are overwritten. |
+| `--out <dir>` | `<repo>/out/m365-plugin` | Plugin output folder (git-ignored). `--package` writes the app project to `<out>-app`. Only previous outputs are overwritten. |
 | `--sessions-dir <dir>` | download live | Use an existing `msevents` cache folder (`<event>-sessions.json` and `<event>-meta.json`) instead of downloading. |
 
 Output layout:
 
 ```text
 out/
-├── cowork-plugin/                  # plugin folder
+├── m365-plugin/                    # plugin folder
 │   ├── .claude-plugin/plugin.json
 │   ├── .mcp.json
 │   └── skills/microsoft-build/
-│       ├── SKILL.md                # rendered from cli/snapshot-skill/SKILL.md
+│       ├── SKILL.md                # rendered from cli/m365-skill/SKILL.md
 │       ├── scripts/msevents.mjs    # the msevents CLI, bundled and locked to offline mode
 │       └── data/                   # frozen cache: <event>-sessions.json and <event>-meta.json
-└── cowork-plugin-app/              # with --package: atk project
+└── m365-plugin-app/                # with --package: atk project
     └── appPackage/build/appPackage.zip
 ```
 
-The Cowork SKILL.md is generated from `cli/snapshot-skill/SKILL.md`, not from `skills/microsoft-build/SKILL.md`. The repo skill tells the agent to use `npx`, the catalog endpoints and `refresh`, none of which work in Cowork's offline sandbox. It's also about 30,000 characters (roughly 7,500 tokens); Cowork accepts that, but recommends keeping a skill body under about 5,000 tokens. The build fills in the snapshot date and event list, and fails if the result is 20,000 characters or more (about 5,000 tokens) or breaks Cowork's skill validation rules.
+The Cowork SKILL.md is generated from `cli/m365-skill/SKILL.md`, not from `skills/microsoft-build/SKILL.md`. The repo skill tells the agent to use `npx`, the catalog endpoints and `refresh`, none of which work in Cowork's offline sandbox. It's also about 30,000 characters (roughly 7,500 tokens); Cowork accepts that, but recommends keeping a skill body under about 5,000 tokens. The build fills in the snapshot date and event list, and fails if the result is 20,000 characters or more (about 5,000 tokens) or breaks Cowork's skill validation rules.
 
-To install, upload `appPackage.zip` in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**), or sideload it with `atk install --file-path <zip> --scope Personal`. Plugin skills appear only in new conversations.
+To install, upload the zip (`appPackage.zip` from a local build, or `microsoft-build-m365.zip` from a release) in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**), or sideload it with `atk install --file-path <zip> --scope Personal`. Plugin skills appear only in new conversations.
 
-The snapshot doesn't update itself. Rebuild with a higher `--plugin-version` and reinstall to pick up catalog changes. `npm run smoke:snapshot` builds from a fixture offline, makes the data read-only, and checks that the bundle's output matches `msevents`.
+The snapshot doesn't update itself. Install a newer release, or rebuild with a higher `--plugin-version` and reinstall, to pick up catalog changes. `npm run smoke:m365` builds from a fixture offline, makes the data read-only, and checks that the bundle's output matches `msevents`.
+
+### Publishing the M365 plugin
+
+The [M365 plugin workflow](../.github/workflows/m365-plugin.yml) builds and publishes the plugin. Run **M365 plugin** from the **Actions** tab on `main` and enter a version. It runs `npm run build:m365 -- --package` with live catalog data, then creates a release tagged `m365-v<version>` with `microsoft-build-m365.zip` attached and marks it **Latest**, so [`releases/latest/download/microsoft-build-m365.zip`](https://github.com/microsoft/Build-CLI/releases/latest/download/microsoft-build-m365.zip) serves it.
+
+- **Version:** the M365 plugin is versioned separately from the plugin manifests, because a catalog refresh needs a new release even without code changes. Enter `x.y.z`, higher than the last `m365-v*` release; Cowork only updates an installed plugin to a higher version.
+- **Testing:** the release is public as soon as the workflow finishes. To try changes first, build locally with `npm run build:m365 -- --plugin-version <version> --package` and install the zip.

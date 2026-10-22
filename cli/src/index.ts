@@ -11,7 +11,7 @@ import { KNOWN_EVENTS } from './config.js';
 
 const knownIds = KNOWN_EVENTS.map((e) => e.id).join(', ');
 
-// Set by bundlers that can't ship package.json next to the code (see scripts/build-snapshot.mjs).
+// Set by bundlers that can't ship package.json next to the code (see scripts/build-m365-plugin.mjs).
 declare const __MSEVENTS_VERSION__: string | undefined;
 
 function readPackageVersion(): string {

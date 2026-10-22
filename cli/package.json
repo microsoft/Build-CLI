@@ -12,10 +12,10 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build:snapshot": "npm run build && node scripts/build-snapshot.mjs",
+    "build:m365": "npm run build && node scripts/build-m365-plugin.mjs",
     "smoke:fixture": "node scripts/smoke-fixture.mjs",
     "smoke:live": "node scripts/smoke-live.mjs",
-    "smoke:snapshot": "node scripts/smoke-snapshot.mjs",
+    "smoke:m365": "node scripts/smoke-m365-plugin.mjs",
     "test": "vitest run"
   },
   "keywords": [

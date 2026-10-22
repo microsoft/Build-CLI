@@ -1,8 +1,8 @@
-// Builds a Claude-format plugin folder for Microsoft 365 Copilot Cowork with an offline session
-// snapshot: skills/microsoft-build/{SKILL.md, scripts/msevents.mjs, data/<event>-*.json}.
+// Builds the Microsoft 365 Copilot plugin (a Claude-format plugin folder for Cowork) with an offline
+// session snapshot: skills/microsoft-build/{SKILL.md, scripts/msevents.mjs, data/<event>-*.json}.
 // scripts/msevents.mjs is the whole msevents CLI bundled into one file. Its banner turns on
 // offline mode (MSEVENTS_OFFLINE) and points the cache at ../data, so data/ is a frozen cache.
-// Run through `npm run build:snapshot` so dist/ is up to date.
+// Run through `npm run build:m365` so dist/ is up to date.
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
@@ -28,12 +28,12 @@ const PRIVACY_URL = 'https://privacy.microsoft.com/privacystatement';
 const TERMS_URL = 'https://www.microsoft.com/servicesagreement';
 const ATK_PACKAGE = '@microsoft/m365agentstoolkit-cli';
 
-const USAGE = `Usage: npm run build:snapshot -- [options]
+const USAGE = `Usage: npm run build:m365 -- [options]
 
-Builds a Copilot Cowork plugin with an offline session snapshot.
+Builds the Microsoft 365 Copilot plugin for Cowork with an offline session snapshot.
 
 Options:
-  --out <dir>             Output folder (default: <repo>/out/cowork-plugin)
+  --out <dir>             Output folder (default: <repo>/out/m365-plugin)
   --event <id>            Event to include; repeat for more (default: all known events)
   --sessions-dir <dir>    Use existing msevents cache files (<event>-sessions.json and
                           <event>-meta.json) instead of downloading
@@ -98,7 +98,7 @@ async function prepareOutDir(outDir) {
   await clearOutputDir(
     outDir,
     [['.claude-plugin', 'plugin.json'], ['skills', SKILL_NAME, 'scripts', SCRIPT_FILE]],
-    'snapshot build',
+    'M365 plugin build',
   );
   await mkdir(outDir, { recursive: true });
 }
@@ -198,7 +198,7 @@ async function readCachedEvent(dir, event) {
 }
 
 async function downloadSessions(events) {
-  const cacheDir = await mkdtemp(join(tmpdir(), 'msevents-snapshot-'));
+  const cacheDir = await mkdtemp(join(tmpdir(), 'msevents-m365-'));
   try {
     const results = [];
     for (const event of events) {
@@ -244,11 +244,11 @@ function readSkillFrontmatter(markdown) {
   return { name: read('name'), description: read('description') };
 }
 
-// Fills the hand-written Cowork SKILL.md template (cli/snapshot-skill/SKILL.md).
+// Fills the hand-written Cowork SKILL.md template (cli/m365-skill/SKILL.md).
 function renderSkill(template, values) {
   const rendered = lf(template).replace(/\{\{\s*([A-Z_]+)\s*\}\}/g, (match, key) => {
     const value = values[key];
-    if (value === undefined) fail(`Unknown placeholder ${match} in the snapshot SKILL.md template`);
+    if (value === undefined) fail(`Unknown placeholder ${match} in the M365 SKILL.md template`);
     return value;
   });
 
@@ -297,7 +297,7 @@ async function bundleCli(cliVersion) {
   // The banner runs before the bundled CLI code, so these settings win over the environment.
   const header = [
     '#!/usr/bin/env node',
-    `// msevents ${cliVersion} (@microsoft/events-cli), bundled by \`npm run build:snapshot\` for offline use.`,
+    `// msevents ${cliVersion} (@microsoft/events-cli), bundled by \`npm run build:m365\` for offline use.`,
     '// Source: https://github.com/microsoft/Build-CLI/tree/main/cli. Do not edit; rebuild instead.',
     '// Runs in offline mode (MSEVENTS_OFFLINE) and reads the frozen session cache in ../data/.',
     "import { createRequire as __mseventsCreateRequire } from 'node:module';",
@@ -337,7 +337,7 @@ async function checkSkillFolder(skillDir) {
 // that it always reads the bundled data offline.
 async function verifyScript(skillDir, collected, cliVersion) {
   const script = join(skillDir, 'scripts', SCRIPT_FILE);
-  const env = { ...process.env, MSEVENTS_OFFLINE: '0', MSEVENTS_CACHE_DIR: join(tmpdir(), 'msevents-snapshot-unused') };
+  const env = { ...process.env, MSEVENTS_OFFLINE: '0', MSEVENTS_CACHE_DIR: join(tmpdir(), 'msevents-m365-unused') };
   const run = (...args) => execFileAsync(process.execPath, [script, ...args], { cwd: tmpdir(), env, timeout: 60_000 });
 
   const { stdout: version } = await run('--version');
@@ -371,7 +371,7 @@ async function main() {
   const events = resolveEvents(values.event);
   const manifest = await readPluginManifest(values['plugin-version']);
   const { version: cliVersion } = await readJson(join(cliRoot, 'package.json'));
-  const outDir = resolve(values.out ?? join(repoRoot, 'out', 'cowork-plugin'));
+  const outDir = resolve(values.out ?? join(repoRoot, 'out', 'm365-plugin'));
   const skillDir = join(outDir, 'skills', SKILL_NAME);
 
   const collected = values['sessions-dir']
@@ -379,7 +379,7 @@ async function main() {
     : await downloadSessions(events);
   const snapshotDate = collected.map(({ meta }) => meta.fetchedAt).sort()[0].slice(0, 10);
 
-  const template = await readFile(join(cliRoot, 'snapshot-skill', 'SKILL.md'), 'utf8');
+  const template = await readFile(join(cliRoot, 'm365-skill', 'SKILL.md'), 'utf8');
   const skill = renderSkill(template, {
     SNAPSHOT_DATE: snapshotDate,
     CLI_VERSION: cliVersion,
@@ -406,7 +406,7 @@ async function main() {
   const app = values.package ? await packageApp(outDir, manifest.version) : undefined;
 
   console.log(`
-Cowork plugin written to ${outDir}
+M365 plugin written to ${outDir}
   Plugin:   ${manifest.name} ${manifest.version}
   Snapshot: ${snapshotDate} (${collected.map(({ meta }) => `${meta.eventId}: ${meta.sessionCount}`).join(', ')})
   SKILL.md: ${skill.length.toLocaleString('en-US')} of ${SKILL_MAX_CHARS.toLocaleString('en-US')} characters
@@ -430,7 +430,7 @@ Next steps:
 try {
   await main();
 } catch (err) {
-  console.error(`build:snapshot failed: ${err instanceof Error ? err.message : String(err)}`);
+  console.error(`build:m365 failed: ${err instanceof Error ? err.message : String(err)}`);
   if (!(err instanceof BuildError) && err instanceof Error && err.stack) console.error(err.stack);
   process.exitCode = 1;
 }

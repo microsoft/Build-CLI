@@ -17,8 +17,8 @@ The repo publishes plugin metadata for GitHub Copilot and Claude Code. Keep shar
 
 ## Sync rules
 
-- Event support is duplicated by design between the CLI and skill docs. When adding, removing, or renaming events, update `cli\src\config.ts`, the supported/default event guidance in `skills\microsoft-build\SKILL.md` and `cli\snapshot-skill\SKILL.md`, and affected tests/docs together.
-- `cli\snapshot-skill\SKILL.md` is the hand-written template for the offline Microsoft 365 Copilot Cowork snapshot. Keep its behavior rules aligned with `skills\microsoft-build\SKILL.md`, but keep it under 20,000 characters (about 5,000 tokens, Cowork's recommended maximum for a skill body) and use only `node scripts/msevents.mjs` commands (no `npx`, network, or `refresh`). Changing it doesn't need a plugin version bump; the version is set when the snapshot is built.
+- Event support is duplicated by design between the CLI and skill docs. When adding, removing, or renaming events, update `cli\src\config.ts`, the supported/default event guidance in `skills\microsoft-build\SKILL.md` and `cli\m365-skill\SKILL.md`, and affected tests/docs together.
+- `cli\m365-skill\SKILL.md` is the hand-written template for the offline Microsoft 365 Copilot plugin (Cowork). Keep its behavior rules aligned with `skills\microsoft-build\SKILL.md`, but keep it under 20,000 characters (about 5,000 tokens, Cowork's recommended maximum for a skill body) and use only `node scripts/msevents.mjs` commands (no `npx`, network, or `refresh`). Changing it doesn't need a plugin version bump; the M365 plugin has its own version, entered when the M365 plugin workflow publishes a release.
 - Treat `skills\microsoft-build\SKILL.md` as the product contract for event-session behavior. For Build, Ignite, or event-session work: default "Build" to `build-2026`, get session metadata from the live catalog through `msevents` or the endpoint, get SDK/API facts from Microsoft Learn MCP, and never invent session IDs, speakers, schedules, or links.
 - Versioning gate: any meaningful `skills\microsoft-build\SKILL.md` change (agent behavior, commands/examples agents may follow, supported/default events, CLI/MCP/catalog usage, or user-facing workflow guidance) must bump both versioned plugin manifests to the same value; patch bumps are fine for guidance-only changes.
 - PR review gate: GitHub Copilot/code reviewers should flag meaningful `SKILL.md` changes without synced plugin version bumps, and any plugin version drift. Typo/format-only skill edits may skip the bump only when the PR explicitly says so.
@@ -37,13 +37,15 @@ npm test
 npx vitest run test\search.test.ts
 npx vitest run test\search.test.ts -t "finds sessions by title keyword"
 npm run smoke:fixture
-npm run smoke:snapshot
-npm run build:snapshot -- --plugin-version 1.0.7 --package
+npm run smoke:m365
+npm run build:m365 -- --plugin-version 1.0.7 --package
 ```
 
-`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests. `npm run build:snapshot` also downloads live catalogs and writes the Cowork plugin to `out\cowork-plugin` (git-ignored); `--package` uses the `atk` CLI to build `out\cowork-plugin-app\appPackage\build\appPackage.zip`. Never commit generated snapshot data.
+`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests. `npm run build:m365` also downloads live catalogs and writes the M365 plugin to `out\m365-plugin` (git-ignored); `--package` uses the `atk` CLI to build `out\m365-plugin-app\appPackage\build\appPackage.zip`. Never commit generated snapshot data.
 
-The Cowork snapshot bundles `cli\src\index.ts` (the whole CLI) with esbuild. Its banner sets `MSEVENTS_OFFLINE=1` and points `MSEVENTS_CACHE_DIR` at the bundled `data\` folder, and the version comes from a build-time `__MSEVENTS_VERSION__` constant because the bundle has no `package.json`. Keep offline mode free of network calls and cache writes; `npm run smoke:snapshot` checks this with read-only data.
+`.github\workflows\m365-plugin.yml` publishes the M365 plugin. It runs manually on `main` with a version input, which must be `x.y.z` and higher than every `m365-v*` tag; the M365 plugin is versioned separately from the plugin manifests. It creates release `m365-v<version>` with `microsoft-build-m365.zip` attached and marks it Latest, which the README links through `releases/latest/download/`, so don't mark other releases as Latest. Keep the build job read-only; only the job that creates the release gets `contents: write`.
+
+The M365 plugin bundles `cli\src\index.ts` (the whole CLI) with esbuild. Its banner sets `MSEVENTS_OFFLINE=1` and points `MSEVENTS_CACHE_DIR` at the bundled `data\` folder, and the version comes from a build-time `__MSEVENTS_VERSION__` constant because the bundle has no `package.json`. Keep offline mode free of network calls and cache writes; `npm run smoke:m365` checks this with read-only data.
 
 Note: The first time `npx @microsoft/events-cli` is run, it prompts for permission and can cause CLI tool calls to hang in AI agents. In all instructions or `SKILL.md`, prefer `npx -y @microsoft/events-cli` to include the `-y` flag.
 

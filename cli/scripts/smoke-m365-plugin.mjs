@@ -1,4 +1,4 @@
-// Builds a snapshot plugin from the fixture catalog, then checks that the bundled CLI works
+// Builds the M365 plugin from the fixture catalog, then checks that the bundled CLI works
 // offline from read-only data and matches the regular CLI's output for the same cached sessions.
 import { execFile } from 'node:child_process';
 import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
@@ -33,7 +33,7 @@ async function setReadOnly(dir, readOnly) {
   if (!isWindows) await chmod(dir, readOnly ? 0o555 : 0o755);
 }
 
-const root = await mkdtemp(join(tmpdir(), 'msevents-snapshot-smoke-'));
+const root = await mkdtemp(join(tmpdir(), 'msevents-m365-smoke-'));
 const cacheDir = join(root, 'cache');
 const emptyCacheDir = join(root, 'empty-cache');
 const pluginDir = join(root, 'plugin');
@@ -62,16 +62,16 @@ try {
     lastCheckStatus: 'failed',
     consecutiveFailures: 2,
   }, null, 2));
-  await writeFile(noNetwork, "globalThis.fetch = () => { throw new Error('network is disabled in smoke:snapshot'); };\n");
+  await writeFile(noNetwork, "globalThis.fetch = () => { throw new Error('  network is disabled in smoke:m365'); };\n");
 
   const built = await run([
-    'scripts/build-snapshot.mjs',
+      'scripts/build-m365-plugin.mjs',
     '--sessions-dir', cacheDir,
     '--event', eventId,
     '--out', pluginDir,
     '--plugin-version', '1.0.0',
   ], { cwd: cliRoot });
-  assert(built.code === 0, `build-snapshot failed:\n${built.stdout}${built.stderr}`);
+  assert(built.code === 0, `build-m365-plugin failed:\n${built.stdout}${built.stderr}`);
 
   const dataFiles = (await readdir(dataDir)).sort();
   assert(
@@ -161,7 +161,7 @@ try {
   assert((await readdir(dataDir)).sort().join(',') === dataFiles.join(','), 'The bundled CLI changed the data folder');
   assert((await readdir(emptyCacheDir)).length === 0, 'The bundled CLI wrote to MSEVENTS_CACHE_DIR from the environment');
 
-  console.log(`Snapshot smoke passed (${sameAsLive.length} commands match the CLI).`);
+  console.log(`M365 plugin smoke passed (${sameAsLive.length} commands match the CLI).`);
 } finally {
   if (dataLocked) await setReadOnly(dataDir, false);
   await rm(root, { recursive: true, force: true });
