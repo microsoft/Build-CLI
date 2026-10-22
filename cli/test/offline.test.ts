@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { isOfflineMode } from '../src/config.js';
+import { isOfflineMode, KNOWN_EVENTS } from '../src/config.js';
 import { ensureCache } from '../src/commands/common.js';
 import { refresh } from '../src/commands/refresh.js';
 import { formatStatus } from '../src/output/format.js';
@@ -104,9 +104,9 @@ describe('offline mode (MSEVENTS_OFFLINE)', () => {
 
     expect(sessions.map((s) => s.sessionCode)).toEqual(['BRK100']);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(stderrOutput()).toBe(
-      'Offline (MSEVENTS_OFFLINE): no cached sessions for Microsoft Ignite 2025, Microsoft Build 2026.\n',
-    );
+    const uncached = KNOWN_EVENTS.filter((e) => e.id !== 'build-2025').map((e) => e.name);
+    expect(uncached.length).toBeGreaterThan(0);
+    expect(stderrOutput()).toBe(`Offline (MSEVENTS_OFFLINE): no cached sessions for ${uncached.join(', ')}.\n`);
     expect((await readdir(cacheDir)).sort()).toEqual(['build-2025-meta.json', 'build-2025-sessions.json']);
   });
 
