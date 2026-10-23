@@ -86,4 +86,28 @@ describe('normalizeCatalog', () => {
     expect(lab344variants.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('handles the Ignite 2026 catalog shape', () => {
+    const ignitePath = join(import.meta.dirname, 'fixtures', 'ignite-2026-sample.json');
+    const igniteRaw: RawSession[] = JSON.parse(readFileSync(ignitePath, 'utf-8'));
+    const sessions = normalizeCatalog(igniteRaw, 'ignite-2026');
+
+    expect(sessions.map((s) => s.sessionCode)).toEqual(['LAB700', 'ODSP2176', 'BRKSP615', 'TT1853']);
+    expect(sessions.every((s) => s.event === 'ignite-2026')).toBe(true);
+
+    // Ignite 2026 rows have a UTC TimeSlot but no startDateTime or relatedSessionCodes yet
+    const lab = sessions.find((s) => s.sessionCode === 'LAB700')!;
+    expect(lab.timeSlot).toBe('15:30 - 16:45');
+    expect(lab.startDateTime).toBe('');
+    expect(lab.relatedSessionCodes).toBe('');
+    expect(lab.location).toBe('Moscone West | Level 2, Room 2010');
+    expect(lab.type).toBe('Lab');
+    expect(lab.level).toBe('(300) Advanced');
+    expect(lab.speakers).toBe('Renato Leite, Poonam Thawani');
+
+    // Pre-recorded sessions have no time slot or room
+    const prerecorded = sessions.find((s) => s.sessionCode === 'ODSP2176')!;
+    expect(prerecorded.type).toBe('Pre-recorded');
+    expect(prerecorded.timeSlot).toBe('');
+    expect(prerecorded.location).toBe('');
+  });
 });

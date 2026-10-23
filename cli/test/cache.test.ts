@@ -121,6 +121,7 @@ describe('automatic cache revalidation', () => {
     await writeCachedEvent('ignite-2025');
     await writeCachedEvent('build-2026');
     const originalMeta = await readMeta('build-2026');
+    await writeCachedEvent('ignite-2026');
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
@@ -128,7 +129,7 @@ describe('automatic cache revalidation', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await readMeta('build-2026')).toEqual(originalMeta);
-    expect(sessions.map((s) => s.event).sort()).toEqual(['build-2025', 'build-2026', 'ignite-2025']);
+    expect(sessions.map((s) => s.event).sort()).toEqual(['build-2025', 'build-2026', 'ignite-2025', 'ignite-2026']);
   });
 
   it('uses conditional GET when a cached event is due for revalidation', async () => {
@@ -142,6 +143,7 @@ describe('automatic cache revalidation', () => {
     });
     await writeCachedEvent('ignite-2025');
     await writeCachedEvent('build-2026');
+    await writeCachedEvent('ignite-2026');
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 304 }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -189,6 +191,7 @@ describe('automatic cache revalidation', () => {
     await writeSessionsOnly('build-2025');
     await writeCachedEvent('ignite-2025');
     await writeCachedEvent('build-2026');
+    await writeCachedEvent('ignite-2026');
     const fetchMock = vi.fn().mockRejectedValue(new TypeError('network down'));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -224,13 +227,17 @@ describe('automatic cache revalidation', () => {
       .mockResolvedValueOnce(jsonResponse(
         [{ sessionCode: 'BRK202', title: 'Build 2026 session' }],
         { etag: '"2026"', 'last-modified': 'Thu, 07 May 2026 02:56:00 GMT' },
+      ))
+      .mockResolvedValueOnce(jsonResponse(
+        [{ sessionCode: 'IGN401', title: 'Ignite 2026 session' }],
+        { etag: '"ign2026"', 'last-modified': 'Thu, 07 May 2026 02:56:30 GMT' },
       ));
     vi.stubGlobal('fetch', fetchMock);
 
     await ensureCache();
 
     const sessions = await getAllCachedSessions();
-    expect(sessions.map((s) => s.sessionCode).sort()).toEqual(['BRK101', 'BRK202', 'IGN301']);
+    expect(sessions.map((s) => s.sessionCode).sort()).toEqual(['BRK101', 'BRK202', 'IGN301', 'IGN401']);
 
     const build2026Meta = await readMeta('build-2026');
     expect(build2026Meta?.lastCheckStatus).toBe('updated');
@@ -287,17 +294,22 @@ describe('automatic cache revalidation', () => {
       .mockResolvedValueOnce(jsonResponse(
         [{ sessionCode: 'IGN301', title: 'Ignite 2025 session' }],
         { etag: '"ign2025"', 'last-modified': 'Thu, 07 May 2026 02:55:30 GMT' },
+      ))
+      .mockResolvedValueOnce(jsonResponse(
+        [{ sessionCode: 'IGN401', title: 'Ignite 2026 session' }],
+        { etag: '"ign2026"', 'last-modified': 'Thu, 07 May 2026 02:56:30 GMT' },
       ));
     vi.stubGlobal('fetch', fetchMock);
 
     const sessions = await ensureCache();
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       'https://aka.ms/build2025-session-info',
       'https://aka.ms/ignite2025-session-info',
+      'https://aka.ms/ignite2026-session-info',
     ]);
-    expect(sessions.map((s) => s.sessionCode).sort()).toEqual(['BRK101', 'BRK202', 'IGN301']);
+    expect(sessions.map((s) => s.sessionCode).sort()).toEqual(['BRK101', 'BRK202', 'IGN301', 'IGN401']);
     expect(await readMeta('build-2026')).toEqual(originalBuild2026Meta);
   });
 

@@ -16,6 +16,11 @@ export const KNOWN_EVENTS: EventConfig[] = [
     name: 'Microsoft Build 2026',
     endpoint: 'https://aka.ms/build2026-session-info',
   },
+  {
+    id: 'ignite-2026',
+    name: 'Microsoft Ignite 2026',
+    endpoint: 'https://aka.ms/ignite2026-session-info',
+  },
 ];
 
 export const DEFAULT_LIMIT = 10;

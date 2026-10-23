@@ -91,3 +91,35 @@ describe('filters', () => {
     expect(results.length).toBeLessThanOrEqual(2);
   });
 });
+
+describe('Ignite 2026 catalog', () => {
+  beforeAll(() => {
+    const ignitePath = join(import.meta.dirname, 'fixtures', 'ignite-2026-sample.json');
+    const igniteRaw: RawSession[] = JSON.parse(readFileSync(ignitePath, 'utf-8'));
+    // Repeats are expected to follow the -R1/-R2 convention used by earlier events
+    const repeat: RawSession = { ...igniteRaw[0]!, sessionCode: 'LAB700-R1', TimeSlot: '17:45 - 19:00' };
+    buildIndex([
+      ...normalizeCatalog(rawSessions, 'build-2025'),
+      ...normalizeCatalog([...igniteRaw, repeat], 'ignite-2026'),
+    ]);
+  });
+
+  it('finds sessions by Ignite code prefixes', () => {
+    for (const code of ['BRKSP615', 'TT1853', 'ODSP2176']) {
+      const results = searchSessions({ query: code.toLowerCase() });
+      expect(results[0]?.session.sessionCode).toBe(code);
+      expect(findSession(code, 'ignite-2026')).toHaveLength(1);
+    }
+  });
+
+  it('returns repeat sessions for a base code', () => {
+    const results = searchSessions({ query: 'LAB700', event: 'ignite-2026' });
+    expect(results.map((r) => r.session.sessionCode)).toEqual(['LAB700', 'LAB700-R1']);
+  });
+
+  it('scopes keyword search to the event', () => {
+    const results = searchSessions({ query: 'recovery strategies', event: 'ignite-2026' });
+    expect(results[0]?.session.sessionCode).toBe('TT1853');
+    expect(results.every((r) => r.session.event === 'ignite-2026')).toBe(true);
+  });
+});

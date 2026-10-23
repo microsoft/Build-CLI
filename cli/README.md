@@ -69,6 +69,7 @@ msevents session BRK155 --json
 
 | Event | Event ID | Status |
 |-------|----------|--------|
+| Ignite 2026 | `ignite-2026` | Live |
 | Build 2026 | `build-2026` | Live |
 | Ignite 2025 | `ignite-2025` | Live |
 | Build 2025 | `build-2025` | Live |
