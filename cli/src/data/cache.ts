@@ -18,6 +18,18 @@ const FAILURE_REVALIDATION_INTERVAL_MS = 15 * MINUTE_MS;
 const MAX_FAILURE_REVALIDATION_INTERVAL_MS = 2 * HOUR_MS;
 const JITTER_RATIO = 0.2;
 
+/**
+ * Bump this when the Session interface shape changes (new/removed/renamed fields).
+ * A mismatch between this value and the stored schemaVersion forces a full re-fetch
+ * so that normalizeSession() can populate the new fields from the raw catalog.
+ */
+export const CACHE_SCHEMA_VERSION = 2;
+
+export function isSchemaOutdated(meta: CacheMeta | null): boolean {
+  if (!meta) return false;
+  return meta.schemaVersion !== CACHE_SCHEMA_VERSION;
+}
+
 export interface FetchAndCacheOptions {
   force?: boolean;
   log?: (message: string) => void;
@@ -95,6 +107,15 @@ export function isCacheCheckDue(meta: CacheMeta | null, now: Date = new Date()):
   if (!meta) return true;
 
   const nextCheck = parseTime(meta.nextCheckAt);
+
+  // Schema outdated → re-fetch needed, but respect failure backoff
+  if (isSchemaOutdated(meta)) {
+    if (meta.lastCheckStatus === 'failed' && nextCheck !== null && now.getTime() < nextCheck) {
+      return false;
+    }
+    return true;
+  }
+
   if (nextCheck !== null) return now.getTime() >= nextCheck;
 
   const lastCheck = parseTime(meta.checkedAt ?? meta.fetchedAt);
@@ -171,7 +192,8 @@ export async function fetchAndCache(
     : cachedSessions.length > 0;
   const cachedSessionCount = cachedSessions?.length ?? existingMeta?.sessionCount;
   const headers: Record<string, string> = {};
-  const canRevalidate = !force && existingMeta !== null && hasExistingSessions;
+  const schemaOutdated = isSchemaOutdated(existingMeta);
+  const canRevalidate = !force && !schemaOutdated && existingMeta !== null && hasExistingSessions;
 
   log?.(hasExistingSessions
     ? `  Local cache: found ${
@@ -189,6 +211,8 @@ export async function fetchAndCache(
 
   if (force) {
     log?.('  Remote check: full GET (--force).\n');
+  } else if (schemaOutdated) {
+    log?.('  Remote check: full GET (cache schema outdated).\n');
   } else if (canRevalidate) {
     log?.('  Remote check: conditional GET.\n');
   } else {
@@ -276,6 +300,7 @@ export async function fetchAndCache(
 
   const metaBase: CacheMeta = {
     eventId: event.id,
+    schemaVersion: CACHE_SCHEMA_VERSION,
     fetchedAt: now.toISOString(),
     checkedAt: now.toISOString(),
     sessionCount: sessions.length,
