@@ -134,14 +134,20 @@ out/
 │   ├── .claude-plugin/plugin.json
 │   ├── .mcp.json
 │   └── skills/microsoft-build/
-│       ├── SKILL.md                # rendered from cli/m365-skill/SKILL.md
+│       ├── SKILL.md                # skills/microsoft-build/SKILL.md, rewritten for offline use
 │       ├── scripts/msevents.mjs    # the msevents CLI, bundled and locked to offline mode
 │       └── data/                   # frozen cache: <event>-sessions.json and <event>-meta.json
 └── m365-plugin-app/                # with --package: atk project
     └── appPackage/build/appPackage.zip
 ```
 
-The Cowork SKILL.md is generated from `cli/m365-skill/SKILL.md`, not from `skills/microsoft-build/SKILL.md`. The repo skill tells the agent to use `npx`, the catalog endpoints and `refresh`, none of which work in Cowork's offline sandbox. It's also about 30,000 characters (roughly 7,500 tokens); Cowork accepts that, but recommends keeping a skill body under about 5,000 tokens. The build fills in the snapshot date and event list, and fails if the result is 20,000 characters or more (about 5,000 tokens) or breaks Cowork's skill validation rules.
+The Cowork SKILL.md is built from the repo skill, `skills/microsoft-build/SKILL.md`, so both stay in sync. The repo skill tells the agent to use `npx`, the catalog endpoints and `refresh`, none of which work in Cowork's offline sandbox, so the build:
+
+- replaces the `## Session catalog access` section and the `compatibility`, `metadata` and `allowed-tools` frontmatter with [`cli/m365-skill/offline-overlay.md`](m365-skill/offline-overlay.md), filling in the snapshot date and bundled events;
+- rewrites the remaining online steps (`npx -y @microsoft/events-cli` becomes `node scripts/msevents.mjs`, "Without CLI" fallbacks and catalog URLs are removed) with `SKILL_REWRITES` in `scripts/build-m365-plugin.mjs`;
+- fails if a rewrite no longer matches the repo skill, if online wording is left, or if the result breaks Cowork's skill validation rules.
+
+When you edit the repo skill, run `npm run smoke:m365`; CI runs it too. The result is about 28,000 characters (roughly 7,000 tokens), above the ~5,000 tokens Cowork recommends for a skill body but within what it accepts.
 
 To install, upload the zip (`appPackage.zip` from a local build, or `microsoft-build-m365.zip` from a release) in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**), or sideload it with `atk install --file-path <zip> --scope Personal`. Plugin skills appear only in new conversations.
 

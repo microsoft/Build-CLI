@@ -84,6 +84,13 @@ try {
     if (file === 'SKILL.md') {
       assert(!text.includes('{{'), 'SKILL.md has unfilled placeholders');
       assert(text.includes('2026-01-01'), 'Expected SKILL.md to show the snapshot date from the cache meta file');
+      assert(text.includes(`| \`${eventId}\` | ${sessions.length} |`), 'Expected SKILL.md to list the bundled event');
+      const repoSkill = (await readFile('../skills/microsoft-build/SKILL.md', 'utf8')).replace(/\r\n?/g, '\n');
+      for (const heading of repoSkill.match(/^## .+$/gm)) {
+        assert(text.includes(`\n${heading}\n`), `Expected SKILL.md to keep the repo skill's "${heading}" section`);
+      }
+      assert(text.includes('node scripts/msevents.mjs session [ID]'), 'Expected workflow commands to use the bundled script');
+      assert(!/npx -y|\*\*Without CLI\*\*|-session-info/.test(text), 'Expected SKILL.md to have no online catalog steps');
     }
   }
   const meta = JSON.parse(await readFile(join(dataDir, `${eventId}-meta.json`), 'utf8'));
