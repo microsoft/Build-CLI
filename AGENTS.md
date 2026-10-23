@@ -7,7 +7,7 @@ This repo packages the **Microsoft Events** assistant plugin and the `@microsoft
 The repo publishes plugin metadata for GitHub Copilot and Claude Code. Keep shared product identity fields aligned across the manifests when changing the plugin name, description, version, author, repository, keywords, license, skills path, or MCP wiring.
 
 **Shared assets** used by the plugin ecosystems:
-- `skills\microsoft-build\SKILL.md` — the active skill prompt
+- `skills\microsoft-events\SKILL.md` — the active skill prompt
 - `.mcp.json` — Microsoft Learn MCP endpoint config
 - `cli\` — source for the `@microsoft/events-cli` package used by the skill
 
@@ -17,9 +17,9 @@ The repo publishes plugin metadata for GitHub Copilot and Claude Code. Keep shar
 
 ## Sync rules
 
-- Event support is duplicated by design between the CLI and skill docs. When adding, removing, or renaming events, update `cli\src\config.ts`, the supported/default event guidance in `skills\microsoft-build\SKILL.md`, and affected tests/docs together.
-- Treat `skills\microsoft-build\SKILL.md` as the product contract for event-session behavior. For Build, Ignite, or event-session work: default "Build" to `build-2026`, get session metadata from the live catalog through `msevents` or the endpoint, get SDK/API facts from Microsoft Learn MCP, and never invent session IDs, speakers, schedules, or links.
-- Versioning gate: any meaningful `skills\microsoft-build\SKILL.md` change (agent behavior, commands/examples agents may follow, supported/default events, CLI/MCP/catalog usage, or user-facing workflow guidance) must bump both versioned plugin manifests to the same value; patch bumps are fine for guidance-only changes.
+- Event support is duplicated by design between the CLI and skill docs. When adding, removing, or renaming events, update `cli\src\config.ts`, the supported/default event guidance in `skills\microsoft-events\SKILL.md`, and affected tests/docs together.
+- Treat `skills\microsoft-events\SKILL.md` as the product contract for event-session behavior. For Build, Ignite, or event-session work: default "Build" to `build-2026`, get session metadata from the live catalog through `msevents` or the endpoint, get SDK/API facts from Microsoft Learn MCP, and never invent session IDs, speakers, schedules, or links.
+- Versioning gate: any meaningful `skills\microsoft-events\SKILL.md` change (agent behavior, commands/examples agents may follow, supported/default events, CLI/MCP/catalog usage, or user-facing workflow guidance) must bump both versioned plugin manifests to the same value; patch bumps are fine for guidance-only changes.
 - PR review gate: GitHub Copilot/code reviewers should flag meaningful `SKILL.md` changes without synced plugin version bumps, and any plugin version drift. Typo/format-only skill edits may skip the bump only when the PR explicitly says so.
 - Keep README install/client guidance aligned with plugin manifest, skill, MCP, or CLI behavior changes.
 

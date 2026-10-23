@@ -1,13 +1,14 @@
 ---
-name: microsoft-build
+name: microsoft-events
 description: >-
-  Your companion for Microsoft Build 2026. Helps you find sessions relevant to
-  your project, discover what's new for your tech stack, scaffold projects from
-  sessions, and plan your event schedule. Activate when users mention sessions,
-  schedule, what's new, Build, Ignite, AI Tour, Microsoft event, conference, or
-  reference a session code (BRK, DEM, LAB, KEY). Also supports Ignite 2025 and
-  Build 2025 session catalogs. Uses the msevents CLI for fast local search and
-  Learn MCP Server for docs.
+  Your companion for Microsoft events, defaulting to Ignite 2026. Helps you
+  find sessions relevant to your project, discover what's new for your tech
+  stack, scaffold projects from sessions, and plan your event schedule. Activate
+  when users mention sessions, schedule, what's new, Build, Ignite,
+  Microsoft event, conference, or reference a session code (BRK, DEM, LAB, KEY,
+  LTG, THR). Supports Ignite 2026, Build 2026, Ignite 2025, and Build 2025
+  catalogs. Uses the msevents CLI for fast local search and Learn MCP Server for
+  docs.
 license: Apache-2.0
 compatibility: >-
   Prefers the msevents CLI (`npx -y @microsoft/events-cli`) for session catalog
@@ -17,15 +18,15 @@ compatibility: >-
   tools are unavailable, falls back to the mslearn CLI
   (`npx @microsoft/learn-cli`). No Azure subscription required.
 metadata:
-  author: Microsoft Learn partnerships team
-  version: "0.5"
-  domain: microsoft-build
+  author: Microsoft Learn team
+  version: "0.7"
+  domain: microsoft-events
 allowed-tools: microsoft_docs_search microsoft_docs_fetch microsoft_code_sample_search
 ---
 
-# Microsoft Build CLI
+# Microsoft Events CLI
 
-> This skill supports multiple Microsoft events. Build 2026 is the default. When the user asks about a different event, use the appropriate event ID and endpoint from the table below.
+> This skill supports multiple Microsoft events. Ignite 2026 is the default. When the user asks about a different event, use the appropriate event ID and endpoint from the table below.
 
 ## Event context
 
@@ -33,34 +34,57 @@ allowed-tools: microsoft_docs_search microsoft_docs_fetch microsoft_code_sample_
 
 | Setting | Value |
 |---------|-------|
-| Event | Build 2026 |
-| Event ID | `build-2026` |
-| Dates | June 2-3, 2026 |
-| Location | San Francisco, CA |
-| Timezone | Pacific Daylight Time (PDT, UTC-7) |
-| Catalog endpoint | `https://aka.ms/build2026-session-info` |
-| News & Announcements | `https://aka.ms/build2026-news` |
-| Default CLI flag | `--event build-2026` |
+| Event | Ignite 2026 |
+| Event ID | `ignite-2026` |
+| Dates | November 17-20, 2026 (optional pre-day: November 16) |
+| Location | San Francisco, CA (Moscone Center) |
+| Timezone | Pacific Time (America/Los_Angeles) |
+| Catalog endpoint | `https://aka.ms/ignite2026-session-info` |
+| News & Announcements | Check Key resources; if missing, search `news.microsoft.com` |
+| Default CLI flag | `--event ignite-2026` |
 
 ### Supported events
 
 | Event | Event ID | Catalog Endpoint | Location | Timezone |
 |-------|----------|-----------------|----------|----------|
+| Ignite 2026 | `ignite-2026` | `https://aka.ms/ignite2026-session-info` | San Francisco, CA (Moscone Center) | PT (America/Los_Angeles) |
 | Build 2026 | `build-2026` | `https://aka.ms/build2026-session-info` | San Francisco, CA | PDT (UTC-7) |
 | Ignite 2025 | `ignite-2025` | `https://aka.ms/ignite2025-session-info` | Chicago, IL | CST (UTC-6) |
 | Build 2025 | `build-2025` | `https://aka.ms/build2025-session-info` | Seattle, WA | PDT (UTC-7) |
 
+### Recognized event names (not yet configured)
+
+| Event name | Status | Behavior |
+|---|---|---|
+| Frontier Tour | Recognized, not configured | Recognize the event name, but do not search or return event facts. |
+
+For recognized-but-not-configured event names, never invent dates, locations, sessions, schedule, or availability.
+
 ### Time display
 
-Always present session times in the event's local timezone (e.g., "2:30 PM PDT" for Build 2026 in San Francisco). If `startDateTime` is null for an upcoming event, note that day assignments aren't available yet and show time slots only.
+Always present session times in the event's local timezone (e.g., "2:30 PM PDT" when the event timezone is PDT). If `startDateTime` is null for an upcoming event, note that day assignments aren't available yet and show time slots only.
 
-When the user mentions a specific event by name, use its event ID for CLI commands (`--event <id>`) and its endpoint for direct fetch. If no event is specified, default to Build 2026.
+When the user mentions a specific event by name, use its event ID for CLI commands (`--event <id>`) and its endpoint for direct fetch. If no event is specified, default to Ignite 2026.
 
-Use these values throughout. When the skill says "Build," it means Build 2026. CLI commands should include `--event build-2026` by default unless the user specifies another event.
+Use these values throughout. CLI commands should include `--event ignite-2026` by default unless the user specifies another event.
 
-Helps developers find Build sessions relevant to their projects, discover what's new for their tech stack, scaffold projects from session content, and plan their Build schedule — all based on what they're actually building.
+### Event and content availability
 
-The "what's new for my project" workflow works year-round — Learn MCP Server always has current documentation, SDK updates, and what's-new pages. During Build, the session catalog adds session recommendations on top of the documentation layer.
+- A configured catalog can represent upcoming, current, or historical content. Do not infer lifecycle state from catalog presence alone.
+- Use catalog fields to distinguish scheduled, live, recorded, on-demand, self-paced, and unavailable content.
+- For upcoming sessions, describe them as scheduled and do not imply recordings, transcripts, or replay unless explicitly indicated.
+- Treat missing availability fields as unavailable or unknown. Do not upgrade availability based on assumptions.
+
+### Schedule authority
+
+- Treat `startDateTime` and `endDateTime` as UTC when present.
+- Treat `TimeSlot` as display text only, not timezone authority.
+- Convert times only when timezone authority is explicit (catalog-provided or user-provided IANA timezone/UTC offset).
+- If UTC boundaries conflict with `TimeSlot`, preserve both and flag the conflict; do not reconcile.
+
+Helps developers and IT pros find event sessions relevant to their projects, discover what's new for their tech stack, scaffold projects from session content, and plan their event schedule — all based on what they're actually building.
+
+The "what's new for me" workflow works year-round — Learn MCP Server always has current documentation, SDK updates, and what's-new pages. During active events, the session catalog adds session recommendations on top of the documentation layer.
 
 Two live data sources, no static files:
 
@@ -69,20 +93,29 @@ Two live data sources, no static files:
 
 > Golden rule: session metadata comes from the live catalog (via CLI or endpoint); SDK docs, API references, and code samples come from Learn MCP Server. Never fabricate session IDs, speaker names, or schedule data.
 
+## Source boundary
+
+- **Catalog facts**: session IDs, titles, abstracts, speakers, schedules, locations, formats, availability, and links.
+- **Learn facts**: current product, SDK/API behavior, lifecycle, implementation, quickstart, and tutorial facts.
+- **Authorized context**: project files, architecture, policies, role, technologies, interests, and learning goals the user explicitly authorizes.
+- **Agent judgment**: relevance categories, comparisons, suggested learning order, and next-step recommendations.
+
+For recommendations, clearly separate facts from judgment and cite the concrete signal behind each recommendation.
+
 ## When to use this skill
 
 Activate when the user:
 
-- Mentions sessions, schedule, or anything about Build, Ignite, or AI Tour
+- Mentions sessions, schedule, or anything about Build or Ignite
 - Asks about a Microsoft flagship event or conference
 - Asks what's new for their project or tech stack
 - Asks what changed in their dependencies or what updates are relevant to their code
 - Wants to find sessions relevant to their work
 - Asks to scaffold or start a project based on a session
-- Asks for help planning their Build schedule or event schedule
+- Asks for help planning their event schedule
 - Asks what to do after attending a session, or wants next steps
 - Wants to log notes or takeaways from a session
-- References a session code (BRK, DEM, LAB, KEY, etc.)
+- References a session code (BRK, DEM, LAB, KEY, LTG, THR, etc.)
 - Asks to create or export their schedule as a markdown file
 
 Do not activate when the user:
@@ -98,22 +131,22 @@ The msevents CLI fetches, caches, indexes, and searches the session catalog loca
 
 ```sh
 # Search by keyword
-npx -y @microsoft/events-cli sessions --query "Microsoft Foundry" --event build-2026 --json
+npx -y @microsoft/events-cli sessions --query "Microsoft Foundry" --event ignite-2026 --json
 
 # Search by technology (matches product, tags, topic, languages, title, description)
-npx -y @microsoft/events-cli sessions --tech "Azure Cosmos DB" --event build-2026 --json
+npx -y @microsoft/events-cli sessions --tech "Azure Cosmos DB" --event ignite-2026 --json
 
 # Search by speaker
-npx -y @microsoft/events-cli sessions --speaker "Scott Hanselman" --event build-2026 --json
+npx -y @microsoft/events-cli sessions --speaker "Scott Hanselman" --event ignite-2026 --json
 
 # Combine filters
-npx -y @microsoft/events-cli sessions --tech "Microsoft Foundry" --speaker "Yina Arenas" --event build-2026 --json
+npx -y @microsoft/events-cli sessions --tech "Microsoft Foundry" --speaker "Yina Arenas" --event ignite-2026 --json
 
 # Look up a specific session by code
 npx -y @microsoft/events-cli session BRK155 --json
 
 # Refresh the cache
-npx -y @microsoft/events-cli refresh --event build-2026
+npx -y @microsoft/events-cli refresh --event ignite-2026
 
 # Check cache status
 npx -y @microsoft/events-cli status
@@ -129,7 +162,7 @@ The CLI caches session data locally. On first use it fetches automatically — n
 | | `--tech <name>` | Search by technology (product, tags, topic, languages, title, description) |
 | | `--speaker <name>` | Search by speaker name |
 | | `--type <type>` | Filter by session type (breakout, lab, demo, keynote, etc.) |
-| | `--event <id>` | Filter by event (e.g., `build-2026`, `ignite-2025`) |
+| | `--event <id>` | Filter by event (e.g., `ignite-2026`, `build-2026`) |
 | | `--limit <n>` | Max results, default 10 |
 | | `--json` | Output as JSON |
 | `session <code>` | `--event <id>` | Scope to a specific event (for disambiguation) |
@@ -144,7 +177,9 @@ If the CLI is not available (not installed, npx fails), fall back to fetching th
 
 ```
 # Use the aka.ms links from the supported events table above
-# Build 2026 (default):
+# Ignite 2026 (default):
+GET https://aka.ms/ignite2026-session-info
+# Build 2026:
 GET https://aka.ms/build2026-session-info
 # Ignite 2025:
 GET https://aka.ms/ignite2025-session-info
@@ -177,8 +212,30 @@ The response is a JSON array of session objects. Key fields:
 | `viewingOptions` | Recording status (e.g., "Will be recorded", "Will not be recorded") |
 | `hasLiveStream` | Whether the session has a live stream (boolean) |
 | `hasOnDemand` | Whether on-demand video will be available (boolean) |
+| `langLocale` | Session locale used in Ignite session-page URL (e.g., `en-US`) |
+| `sessionInstanceId` | Opaque Ignite session instance ID used to build session-page URL |
 
 When using direct fetch: fetch once per conversation, filter for all technologies in the inventory in the same step, carry forward only matched sessions.
+
+### Deterministic catalog access guardrails
+
+1. Prefer `msevents` for live catalog retrieval whenever available.
+2. For generic cross-event search or event-less session-code lookup, ensure coverage for every required active event before returning results.
+3. If required event coverage is missing, state the limitation, list missing events, and ask the user to narrow scope.
+4. Do not return partial cross-event results as if complete.
+5. Do not use page scraping, browser extraction, or unbounded catalog loading for authoritative session lookup.
+
+### Session page link rules
+
+When listing sessions, always include a session page URL when deterministically available from catalog facts.
+
+1. **Ignite sessions**: build the URL from catalog fields:
+   - `https://ignite.microsoft.com/{langLocale}/sessions/{sessionInstanceId}?source=sessions`
+   - Use `langLocale` and `sessionInstanceId` from the catalog record.
+   - Never invent or guess opaque IDs.
+2. **Build sessions**: use:
+   - `https://build.microsoft.com/sessions/{sessionCode}`
+3. If required URL fields are missing, state that a direct session-page link is unavailable for that result instead of fabricating one.
 
 ### Learn MCP Server (live)
 
@@ -206,31 +263,40 @@ npx @microsoft/learn-cli code-search "azure openai streaming"
 
 ## Core workflows
 
-### "What's new for my project?"
+### "What's new for me?"
 
-The user wants to know what recent Microsoft updates are relevant to their project. This workflow works year-round.
+The user wants to know what recent Microsoft updates are relevant to them. This workflow works year-round.
 
-1. Scan the user's project for tech stack signals: package.json, requirements.txt, .csproj, go.mod, Dockerfile, bicep/terraform files, .github/workflows
-2. Extract dependencies, frameworks, and services in use
-3. If a recent event is active or recent, fetch the News & Announcements page to discover announcements relevant to the inventory. This surfaces product launches, GA announcements, and preview features that may not yet appear in Learn what's-new pages or session titles.
-4. Query Learn MCP Server for recent what's-new pages, SDK updates, and migration guides for each identified dependency. Include any announcements discovered via the News & Announcements page.
-5. Search for relevant sessions:
-   - **With CLI**: Run `npx -y @microsoft/events-cli sessions --tech "[product]" --event build-2026 --json` for each major technology in the inventory
+1. Start by asking how to personalize recommendations:
+   - **Project-based** (scan an open dev project), or
+   - **Profile-based** (use known stack/deployment context from the conversation and user-provided details)
+2. If project-based is chosen, ask explicit permission before reading project files. Only scan when the user agrees.
+3. Build an initial technology inventory:
+   - **With permission**: scan project signals (`package.json`, `requirements.txt`, `.csproj`, `go.mod`, `Dockerfile`, bicep/terraform files, `.github/workflows`)
+   - **Without permission or no project**: use known stack/deployment context and any technologies already mentioned by the user
+4. Validate the inventory with the user before recommendations:
+   - Confirm what's correct
+   - Remove incorrect items
+   - Ask whether they want to add any other technologies, platforms, or priorities
+5. If a recent event is active or recent, fetch the News & Announcements page to discover announcements relevant to the confirmed inventory. This surfaces product launches, GA announcements, and preview features that may not yet appear in Learn what's-new pages or session titles.
+6. Query Learn MCP Server for recent what's-new pages, SDK updates, and migration guides for each confirmed dependency/technology. Include any announcements discovered via the News & Announcements page.
+7. Search for relevant sessions:
+   - **With CLI**: Run `npx -y @microsoft/events-cli sessions --tech "[product]" --event ignite-2026 --json` for each major technology in the confirmed inventory
    - **Without CLI**: Fetch the catalog once and match against `product`, `topic`, `tags`, and `programmingLanguages` fields
-6. Present results:
+8. Present results:
    - Announcements: what was launched or updated, with links to docs and blog posts
    - Documentation updates: what changed in the SDKs and services they use, with links to current docs
    - Relevant sessions: event sessions that cover their technologies, sorted by relevance
-7. For high-confidence matches, offer to explain the migration path or impact on the developer's project
+9. For high-confidence matches, offer to explain migration path or implementation impact for their environment
 
 Be specific. "The new Azure Functions v4 streaming support affects your queue trigger in /api/process.ts" is useful. "There were updates to Azure Functions" is not.
 
 **Output format:**
 ```
-## What's New at Build for Your Stack
+## What's New at [Event] for You
 
-Scanning: package.json, tsconfig.json, Dockerfile
-Stack: Node 20, TypeScript, Azure Functions v4, Cosmos DB
+Mode: Project-based (approved) | Profile-based
+Inventory used: Node 20, TypeScript, Azure Functions v4, Cosmos DB
 
 ### @azure/cosmos
 - New vector search API replaces your workaround in /api/search
@@ -245,41 +311,57 @@ Stack: Node 20, TypeScript, Azure Functions v4, Cosmos DB
 Create upgrade branch with new APIs? (y/n)
 ```
 
-### "Find sessions for me"
+### "Find sessions for me (personalized learning path)"
 
 The user wants a personalized event schedule based on their projects or interests.
 
-1. If the user has a project open, scan tech stack (same as above)
-2. If no project is open, interview briefly (2-3 questions max): what they do, what technologies they use or want to learn, what they want from Build (solve a problem, learn something new, hands-on practice)
-3. Search for sessions:
-   - **With CLI**: `npx -y @microsoft/events-cli sessions --tech "[product]" --event build-2026 --json` per technology, then `--query` for broader interest areas
+1. Confirm target event (default Ignite 2026), role, and objective.
+2. If the user has a project open, scan tech stack (same as above).
+3. If no project is open, interview briefly (2-3 questions max): what they do, what technologies they use or want to learn, what they want from the event (solve a problem, learn something new, hands-on practice).
+4. Search for sessions:
+   - **With CLI**: `npx -y @microsoft/events-cli sessions --tech "[product]" --event ignite-2026 --json` per technology, then `--query` for broader interest areas
    - **Without CLI**: Fetch the catalog and match manually
-4. Match sessions to the user's stack using product, topic, tags, languages, and description
-5. Present 3-5 sessions grouped by relevance tier:
+5. Match sessions to the user's stack and role using product, topic, tags, languages, and description.
+6. Rank by direct relevance, then progression fit (foundation -> applied -> advanced).
+7. Present 3-5 sessions grouped by relevance tier:
    - Directly relevant: sessions about technologies in their active project
    - Adjacent: sessions about complementary technologies or next-step capabilities
    - Exploratory: sessions that expand their toolkit in a useful direction
-6. For each recommended session, include: session code, title, one-line reason it's relevant, speaker(s), location, time slot, type (lab/breakout/demo), level
-7. If they have time for multiple sessions, suggest a learning path order: foundational first, then intermediate/advanced, ending with hands-on labs to apply what they learned
-8. After helping the user build a schedule (finding sessions, flagging conflicts), offer: "Would you like me to save this as a markdown file?" Do not create a file until the user confirms. Include day, time, session code, title, and location.
+8. Build a sequenced path:
+   - Foundation
+   - Applied implementation
+   - Advanced/architecture
+9. For each recommended session, include: session code, title, one-line reason it's relevant, speaker(s), location, time slot, type (lab/breakout/demo), level, session-page URL, and why it belongs at that point in the sequence.
+10. If confidence is low, say so and offer 1-2 alternatives.
+11. After helping the user build a schedule (finding sessions, flagging conflicts), offer: "Would you like me to save this as a markdown file?" Do not create a file until the user confirms. Include day, time, session code, title, and location.
 
 **Output format:**
-```
-## Recommended Sessions for Your Stack
+``` 
+## Personalized Session Path for Your Stack
 
 Based on your project (Node.js, Azure Functions, Cosmos DB):
 
+### Foundation
 1. **BRK223** — From rows to reasoning: Designing databases for AI apps and agents
    📌 Relevant: You use Cosmos DB in /api/data
    🎤 Mark Smith  |  📍 Room 151  |  Jun 2, 3:45 PM PDT
    Breakout · Level 300
+   Why now: Establishes core data patterns used by later implementation sessions
    🔗 https://build.microsoft.com/sessions/BRK223
 
+### Applied implementation
 2. **LAB511** — Create advanced Postgres-powered agentic apps with Azure HorizonDB
    📌 Relevant: Your requirements.txt includes psycopg2
    🎤 Jane Doe  |  📍 Hall B  |  Jun 3, 9:00 AM PDT
    Lab · Level 200
+   Why now: Applies architecture patterns from the foundation session in hands-on form
    🔗 https://build.microsoft.com/sessions/LAB511
+
+### Advanced/architecture
+3. **BRK310** — [Example advanced session]
+   📌 Relevant: Expands production design choices for your stack
+   Why now: Moves from implementation to scaling and operational trade-offs
+   🔗 [Session page URL]
 ```
 
 ### "Scaffold from session [ID]"
@@ -288,7 +370,7 @@ The user saw a session and wants to start building with what was demonstrated.
 
 1. **Ask where to create the project first** — don't assume. New directory, current directory, or a specific path.
 2. Look up the session:
-   - **With CLI**: `npx -y @microsoft/events-cli session [ID] --event build-2026 --json`
+   - **With CLI**: `npx -y @microsoft/events-cli session [ID] --event ignite-2026 --json`
    - **Without CLI**: Fetch the catalog and find by code or title
 3. Extract the technologies and products covered from the session metadata
 4. Check prerequisites: based on the session's tech stack, list what the user needs (Azure subscription, SDKs, runtimes, API keys). Ask if they have them before proceeding.
@@ -318,9 +400,9 @@ Open in VS Code? (y/n)
 The user wants to understand a specific session.
 
 1. Look up the session:
-   - **With CLI**: `npx -y @microsoft/events-cli session [ID] --event build-2026 --json`
+   - **With CLI**: `npx -y @microsoft/events-cli session [ID] --event ignite-2026 --json`
    - **Without CLI**: Fetch the catalog and find by code or title
-2. Present: title, speakers, abstract, session type, level, time slot, location, delivery type, viewing options, related sessions
+2. Present: title, speakers, abstract, session type, level, time slot, location, delivery type, viewing options, session-page URL, related sessions
 3. If the session covers specific products or technologies, search Learn MCP for current docs on those topics
 4. Link to slides or on-demand video if available
 5. If the user is remote, highlight whether the session is online, has a live stream, or will be available on-demand
@@ -353,7 +435,7 @@ Learn how to design your database layer for AI-native applications and agents...
 The user just attended or watched a session and wants next steps.
 
 1. Look up the session:
-   - **With CLI**: `npx -y @microsoft/events-cli session [ID] --event build-2026 --json`
+   - **With CLI**: `npx -y @microsoft/events-cli session [ID] --event ignite-2026 --json`
    - **Without CLI**: Fetch the catalog and find by code or title
 2. Check the `relatedSessionCodes` field first — use those if populated
 3. Build a response with up to three sections:
@@ -370,10 +452,12 @@ The user just attended or watched a session and wants next steps.
 1. **BRK224** — Thirsty for more data: how Pepsi refreshed for agentic apps
    Builds on the Cosmos DB patterns you just learned
    ⏰ Starts in 45 min
+   🔗 [Session page URL]
 
 2. **DEM310** — Ship code faster with AI-powered NoSQL schema design
    Directly applies to your project's data layer
    ⏰ Starts in 2 hours
+   🔗 [Session page URL]
 
 ### Try Now (between sessions)
 - Scaffold a project from BRK223: `scaffold BRK223`
@@ -409,6 +493,74 @@ The user wants to capture takeaways during or after a session.
 
 4. If session lookup fails, write the entry without enrichment — don't block note-taking on data access.
 5. Confirm briefly: "Saved your note on BRK241 to journal/2026-05-19.md."
+
+### "Build a supplemental learning path"
+
+The user wants docs and samples that complement selected sessions.
+
+1. Start from chosen sessions (or ask for 1-3 session codes).
+2. Extract products/topics from session metadata.
+3. Query Learn MCP for current quickstarts, tutorials, API refs, and code samples.
+4. Organize resources by learning phase: before session, after session, production hardening.
+5. Include only resources with clear topic alignment; do not pad with generic docs.
+
+**Output format:**
+```markdown
+## Supplemental Learning Path for [Session Code(s)]
+
+### Before the session
+- [Doc title](URL) - [1-line reason]
+
+### After the session
+- [Quickstart/tutorial](URL) - [1-line reason]
+
+### Production hardening
+- [Architecture/ops doc](URL) - [1-line reason]
+```
+
+### "Create an operational learning checklist"
+
+The user wants practical execution steps from session learning to implementation.
+
+1. Identify session technologies and required prerequisites.
+2. Convert session themes into concrete tasks (setup, validate, implement, deploy, observe).
+3. Add evidence checkpoints for each task (what proves completion).
+4. Include dependencies/order and minimal rollback guidance for risky steps.
+5. Keep checklist scoped to the user's stack and selected sessions.
+
+**Output format:**
+```markdown
+## Operational Checklist from [Session Code]
+
+- [ ] Environment prerequisites verified
+- [ ] Starter implementation completed
+- [ ] Validation tests run
+- [ ] Deployment path confirmed
+- [ ] Monitoring/alerts configured
+- [ ] Follow-up session or doc reviewed
+```
+
+### "Ground recommendations in authorized context"
+
+Use this whenever recommendations are personalized.
+
+1. Treat session/catalog fields and Learn docs as facts; keep recommendations as judgment.
+2. Tie every recommendation to explicit context:
+   - user-stated goals, or
+   - approved project inventory, or
+   - prior constraints shared in-chat.
+3. For each recommended session/resource, cite concrete matching signals.
+4. If context is missing or ambiguous, ask for it before ranking.
+
+**Output format:**
+```markdown
+## Recommendation Traceability
+
+- Recommendation: [CODE or doc]
+  - Matched facts: [catalog/doc facts]
+  - Authorized context: [user goal or project signal]
+  - Confidence: High | Medium | Low
+```
 
 ## Context before recommendations
 
@@ -447,7 +599,7 @@ Use MCP tools (or the mslearn CLI fallback) deliberately, not speculatively:
 3. Fetch full pages for high-value results. A search result snippet may lack the migration steps or version details the developer needs. Use microsoft_docs_fetch on the most relevant URLs.
 4. Scope searches to the inventory. Do not search for technologies the developer does not use.
 5. Try multiple query formulations when initial results are weak. If "what's new Azure Cosmos DB" returns generic content, try "Azure Cosmos DB changelog 2026" or "Azure Cosmos DB preview features."
-6. For broad questions ("what's new for my project", "what changed at Build"), always fetch the event's **News & Announcements** page using the links in the **Key resources** section below. If the relevant event or year is not listed there, fall back to searching `news.microsoft.com` for the event's **News & Announcements** page. The **News & Announcements** page groups announcements by theme, names related sessions, and links to blog posts and docs. It surfaces announcements that do not appear in session titles or Learn what's-new pages — in testing, it found 6 major announcements and 8 additional sessions that catalog keyword search alone missed. Fetch it early as a discovery step, then follow through to Learn docs for technical detail. For narrow questions ("tell me about session BRK155"), the **News & Announcements** page is optional.
+6. For broad questions ("what's new for me", "what's new for my project", "what changed at this event"), always fetch the event's **News & Announcements** page using the links in the **Key resources** section below. If the relevant event or year is not listed there, fall back to searching `news.microsoft.com` for the event's **News & Announcements** page. The **News & Announcements** page groups announcements by theme, names related sessions, and links to blog posts and docs. It surfaces announcements that do not appear in session titles or Learn what's-new pages — in testing, it found 6 major announcements and 8 additional sessions that catalog keyword search alone missed. Fetch it early as a discovery step, then follow through to Learn docs for technical detail. For narrow questions ("tell me about session BRK155"), the **News & Announcements** page is optional.
 7. Use what's-new pages on Learn when they exist. Many services have dedicated pages following patterns like `/azure/{service}/whats-new` or `/dotnet/core/whats-new/`. Try fetching these directly with microsoft_docs_fetch for a comprehensive changelog.
 
 ## Session catalog cross-reference
@@ -456,7 +608,7 @@ When the agent finds relevant documentation updates for the developer's stack, c
 
 1. Take the product names and topics from the documentation results
 2. Search for matching sessions:
-   - **With CLI**: `npx -y @microsoft/events-cli sessions --tech "[product]" --event build-2026 --json`
+   - **With CLI**: `npx -y @microsoft/events-cli sessions --tech "[product]" --event ignite-2026 --json`
    - **Without CLI**: Match against catalog fields `product`, `topic`, `tags`, `solutionArea`
 3. Use announcement content as a bridge — if a what's-new page mentions a feature, search sessions covering that product area
 4. Present sessions alongside the documentation updates, not as a separate list
@@ -498,7 +650,7 @@ Query templates for common lookups. Replace `[placeholders]` with values from th
 | Migration guide | `"migrate to [new feature/version] [product name]"` | |
 | Quickstart | `"quickstart [product name] [language]"` | |
 | Code sample | `"[product name] [feature] sample [language]"` | Use microsoft_code_sample_search |
-| Event updates | `"[product name] Build 2026"` or `"[product name] Ignite 2026"` | Surfaces event-specific announcements |
+| Event updates | `"[product name] Ignite 2026"` or `"[product name] Build 2026"` | Surfaces event-specific announcements |
 
 ## Acceptance criteria
 
@@ -519,12 +671,40 @@ A good response from this skill:
 | Microsoft Ignite | `https://ignite.microsoft.com/` |
 | msevents CLI | `npx -y @microsoft/events-cli` |
 | CLI source | `../../cli/` |
+| Ignite 2026 session catalog | `https://aka.ms/ignite2026-session-info` |
 | Build 2026 session catalog | `https://aka.ms/build2026-session-info` |
 | Build 2025 session catalog | `https://aka.ms/build2025-session-info` |
 | Ignite 2025 session catalog | `https://aka.ms/ignite2025-session-info` |
+| Ignite 2026 News & Announcements | If not published in this table yet, search `news.microsoft.com` for Ignite 2026 announcements |
 | Build 2026 News & Announcements | `https://aka.ms/build2026-news` |
 | Build 2025 News & Announcements | `https://aka.ms/build2025-news` |
 | Ignite 2025 News & Announcements | `https://aka.ms/ignite2025-news` |
 | Learn MCP Server | `https://learn.microsoft.com/api/mcp` |
 | Learn MCP Server docs | `https://learn.microsoft.com/en-us/training/support/mcp` |
 | Azure Agent Skills (product names) | `https://github.com/MicrosoftDocs/Agent-Skills` |
+
+## Ignite 2026 repository conventions
+
+Use these rules when users ask for repo links tied to Ignite sessions:
+
+1. Prefer explicit links from trusted event threads when available.
+2. Otherwise use the observed naming convention `https://github.com/microsoft/ignite26-<SESSIONCODE>` and verify the repo exists before sharing.
+3. For collaboration/onboarding requests, keep operational ownership separate from technical guidance (for example, John Gruszczyk coordinating org-onboarding follow-ups).
+
+Known Ignite 2026 repos shared in Teams:
+
+- `ignite26-BRK240`
+- `ignite26-BRK243`
+- `ignite26-BRK244`
+- `ignite26-BRK300`
+- `ignite26-BRK388`
+- `ignite26-BRK389`
+- `ignite26-BRK390`
+- `ignite26-BRK391`
+- `ignite26-BRK392`
+- `ignite26-BRK393`
+- `ignite26-BRK394`
+- `ignite26-BRK395`
+- `ignite26-LTG1185`
+- `ignite26-THR888`
+- `ignite26-THR889`
