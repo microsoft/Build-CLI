@@ -18,6 +18,7 @@ The repo publishes plugin metadata for GitHub Copilot and Claude Code. Keep shar
 ## Sync rules
 
 - Event support is duplicated by design between the CLI and skill docs. When adding, removing, or renaming events, update `cli\src\config.ts`, the supported/default event guidance in `skills\microsoft-build\SKILL.md`, and affected tests/docs together.
+- The offline Microsoft 365 Copilot plugin (Cowork) builds its SKILL.md from `skills\microsoft-build\SKILL.md`; there's no second copy to keep aligned. `cli\m365-skill\offline-overlay.md` holds the only Cowork-specific text: frontmatter keys to replace and a `## Session catalog access` section that uses only `node scripts/msevents.mjs` (no `npx`, network, or `refresh`). `SKILL_REWRITES` in `cli\scripts\build-m365-plugin.mjs` rewrites the remaining online steps, and the build fails when a rewrite stops matching or online wording (`npx`, catalog endpoints, `refresh`, "live catalog") is left, so `npm run smoke:m365` catches main-skill edits that need a matching update there. Changing the overlay or rewrites doesn't need a plugin version bump; the M365 plugin has its own version, entered when the M365 plugin workflow publishes a release.
 - Treat `skills\microsoft-build\SKILL.md` as the product contract for event-session behavior. For Build, Ignite, or event-session work: default "Build" to `build-2026`, get session metadata from the live catalog through `msevents` or the endpoint, get SDK/API facts from Microsoft Learn MCP, and never invent session IDs, speakers, schedules, or links.
 - Versioning gate: any meaningful `skills\microsoft-build\SKILL.md` change (agent behavior, commands/examples agents may follow, supported/default events, CLI/MCP/catalog usage, or user-facing workflow guidance) must bump both versioned plugin manifests to the same value; patch bumps are fine for guidance-only changes.
 - PR review gate: GitHub Copilot/code reviewers should flag meaningful `SKILL.md` changes without synced plugin version bumps, and any plugin version drift. Typo/format-only skill edits may skip the bump only when the PR explicitly says so.
@@ -36,16 +37,22 @@ npm test
 npx vitest run test\search.test.ts
 npx vitest run test\search.test.ts -t "finds sessions by title keyword"
 npm run smoke:fixture
+npm run smoke:m365
+npm run build:m365 -- --plugin-version 1.0.7 --package
 ```
 
-`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests.
+`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests. `npm run build:m365` also downloads live catalogs and writes the M365 plugin to `out\m365-plugin` (git-ignored); `--package` uses the `atk` CLI to build `out\m365-plugin-app\appPackage\build\appPackage.zip`. Never commit generated snapshot data.
+
+`.github\workflows\m365-plugin.yml` publishes the M365 plugin. It runs manually on `main` with a version input, which must be `x.y.z` and higher than every `m365-v*` tag; the M365 plugin is versioned separately from the plugin manifests. It creates release `m365-v<version>` with `microsoft-build-m365.zip` attached and marks it Latest, which the README links through `releases/latest/download/`, so don't mark other releases as Latest. Keep the build job read-only; only the job that creates the release gets `contents: write`.
+
+The M365 plugin bundles `cli\src\index.ts` (the whole CLI) with esbuild. Its banner sets `MSEVENTS_OFFLINE=1` and points `MSEVENTS_CACHE_DIR` at the bundled `data\` folder, and the version comes from a build-time `__MSEVENTS_VERSION__` constant because the bundle has no `package.json`. Keep offline mode free of network calls and cache writes; `npm run smoke:m365` checks this with read-only data.
 
 Note: The first time `npx @microsoft/events-cli` is run, it prompts for permission and can cause CLI tool calls to hang in AI agents. In all instructions or `SKILL.md`, prefer `npx -y @microsoft/events-cli` to include the `-y` flag.
 
 ## CLI behavior contracts
 
 - Catalog data has inconsistent shapes: fields may be strings, `{ displayValue }` objects, arrays, or empty values. Normalize through the helpers in `cli\src\data\normalize.ts`; records without `sessionCode` are intentionally skipped.
-- Cache behavior is part of the CLI contract. `ensureCache` loads cached sessions, revalidates when due, fetches missing event caches, and only falls back to stale cache when the stale data is scoped to the request. Tests use `MSEVENTS_CACHE_DIR` to isolate cache state.
+- Cache behavior is part of the CLI contract. `ensureCache` loads cached sessions, revalidates when due, fetches missing event caches, and only falls back to stale cache when the stale data is scoped to the request. With `MSEVENTS_OFFLINE=1` it only reads the cache and skips uncached events; `refresh` errors and `status` reports offline. Tests use `MSEVENTS_CACHE_DIR` to isolate cache state.
 - Search behavior is intentionally specialized: the `msevents sessions` command requires `--query`, `--tech`, or `--speaker`; code-like queries exact-match session codes and variants; technology search spans product/tags/topic/solution area/languages/title/description; speaker search post-filters on the queried last name.
 
 ## General principles

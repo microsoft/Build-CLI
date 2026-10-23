@@ -1,4 +1,4 @@
-import { KNOWN_EVENTS } from '../config.js';
+import { KNOWN_EVENTS, OFFLINE_ENV_VAR, isOfflineMode } from '../config.js';
 import {
   fetchAndCache,
   getAllCachedSessions,
@@ -6,7 +6,7 @@ import {
   readMeta,
   readSessions,
 } from '../data/cache.js';
-import type { Session } from '../contracts.js';
+import type { EventConfig, Session } from '../contracts.js';
 import { FetchError } from '../errors.js';
 
 export function validateEventId(eventId: string): boolean {
@@ -36,12 +36,28 @@ export function validateLimit(raw: string): number | null {
   return parsed;
 }
 
+async function readCacheOffline(events: EventConfig[]): Promise<Session[]> {
+  const sessions: Session[] = [];
+  const missing: string[] = [];
+  for (const event of events) {
+    const cached = await readSessions(event.id);
+    if (cached.length === 0) missing.push(event.name);
+    sessions.push(...cached);
+  }
+  if (missing.length > 0) {
+    process.stderr.write(`Offline (${OFFLINE_ENV_VAR}): no cached sessions for ${missing.join(', ')}.\n`);
+  }
+  return sessions;
+}
+
 export async function ensureCache(eventFilter?: string): Promise<Session[]> {
   let missingCacheHeaderPrinted = false;
   const availableSessions: Session[] = [];
   const events = eventFilter
     ? KNOWN_EVENTS.filter((event) => event.id === eventFilter)
     : KNOWN_EVENTS;
+
+  if (isOfflineMode()) return readCacheOffline(events);
 
   for (const event of events) {
     const cachedSessions = await readSessions(event.id);

@@ -46,6 +46,9 @@ jobs:
       - name: Smoke test CLI commands with cached fixture
         run: npm run smoke:fixture
 
+      - name: Smoke test M365 plugin bundle
+        run: npm run smoke:m365
+
       - name: Smoke test live catalog
         if: github.event_name != 'pull_request'
         run: npm run smoke:live
