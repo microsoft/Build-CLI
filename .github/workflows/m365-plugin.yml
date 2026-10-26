@@ -11,6 +11,11 @@ on:
         description: M365 plugin version (x.y.z), higher than the last m365-v* release. Cowork only updates to a higher version.
         required: true
         type: string
+      events:
+        description: Events to bundle, separated by spaces (for example "build-2026 ignite-2026"). Leave empty for all events.
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -76,8 +81,14 @@ jobs:
       - name: Build app package
         env:
           VERSION: ${{ inputs.version }}
+          EVENTS: ${{ inputs.events }}
         run: |
-          npm run build:m365 -- --plugin-version "$VERSION" --package
+          args=(--plugin-version "$VERSION" --package)
+          IFS=', ' read -r -a events <<< "$EVENTS"
+          for event in "${events[@]}"; do
+            if [ -n "$event" ]; then args+=(--event "$event"); fi
+          done
+          npm run build:m365 -- "${args[@]}"
           cp ../out/m365-plugin-app/appPackage/build/appPackage.zip "../out/$ZIP_NAME"
 
       - name: Upload app package artifact
