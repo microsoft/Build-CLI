@@ -1,0 +1,130 @@
+name: M365 plugin
+
+# Builds the offline Microsoft 365 Copilot plugin app package (for Cowork) with live catalog data
+# and publishes it as release m365-v<version>, marked Latest, so
+# releases/latest/download/microsoft-build-m365.zip serves it. The M365 plugin has its own
+# version, separate from the plugin manifests, because catalog refreshes need new releases too.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: M365 plugin version (x.y.z), higher than the last m365-v* release. Cowork only updates to a higher version.
+        required: true
+        type: string
+      events:
+        description: Events to bundle, separated by spaces (for example "build-2026 ignite-2026"). Leave empty for all events.
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  # Keep in sync with the atk install step in ci.yml.
+  ATK_VERSION: 1.1.18
+  ZIP_NAME: microsoft-build-m365.zip
+
+jobs:
+  build:
+    name: Build M365 plugin app package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: cli
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: cli/package-lock.json
+
+      - name: Check branch and version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]; then
+            echo "::error::Run this workflow from $DEFAULT_BRANCH; it publishes a public release."
+            exit 1
+          fi
+          if ! printf '%s' "$VERSION" | grep -Eq '^[1-9][0-9]*\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version \"$VERSION\" must look like 1.2.3 and can't start with 0."
+            exit 1
+          fi
+          tags="$(gh api --paginate "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/m365-v" --jq '.[].ref | ltrimstr("refs/tags/m365-v")')"
+          last="$(printf '%s\n' "$tags" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)"
+          if [ -n "$last" ] && { [ "$VERSION" = "$last" ] || [ "$(printf '%s\n' "$last" "$VERSION" | sort -V | tail -n 1)" != "$VERSION" ]; }; then
+            echo "::error::Version $VERSION must be higher than the last M365 release, $last."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Microsoft 365 Agents Toolkit CLI
+        run: npm install -g --no-audit --no-fund "@microsoft/m365agentstoolkit-cli@$ATK_VERSION"
+
+      - name: Build app package
+        env:
+          VERSION: ${{ inputs.version }}
+          EVENTS: ${{ inputs.events }}
+        run: |
+          args=(--plugin-version "$VERSION" --package)
+          IFS=', ' read -r -a events <<< "$EVENTS"
+          for event in "${events[@]}"; do
+            if [ -n "$event" ]; then args+=(--event "$event"); fi
+          done
+          npm run build:m365 -- "${args[@]}"
+          cp ../out/m365-plugin-app/appPackage/build/appPackage.zip "../out/$ZIP_NAME"
+
+      - name: Upload app package artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: out/${{ env.ZIP_NAME }}
+          archive: false
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download app package artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: release
+          skip-decompress: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          unzip -l "release/$ZIP_NAME" manifest.json
+          gh release create "m365-v$VERSION" "release/$ZIP_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "M365 plugin $VERSION" \
+            --generate-notes \
+            --latest
