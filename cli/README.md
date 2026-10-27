@@ -151,7 +151,7 @@ When you edit the repo skill, run `npm run smoke:m365`; CI runs it too. The resu
 
 To install, upload the zip (`appPackage.zip` from a local build, or `microsoft-build-m365.zip` from a release) in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**), or sideload it with `atk install --file-path <zip> --scope Personal`. Plugin skills appear only in new conversations.
 
-The snapshot doesn't update itself. Install a newer release, or rebuild with a higher `--plugin-version` and reinstall, to pick up catalog changes. `npm run smoke:m365` builds from a fixture offline, makes the data read-only, and checks that the bundle's output matches `msevents`.
+The snapshot doesn't update itself. Install a newer release, or rebuild with a higher `--plugin-version` and reinstall, to pick up catalog changes. `npm run smoke:m365` builds from a fixture offline, makes the data read-only, and checks that the bundle's output matches `msevents`. With `-- --package` (needs `atk`), it also builds the app package zip, unzips it, checks that its skill files match the plugin folder, and runs the same checks against the unzipped skill; CI runs it this way.
 
 ### Publishing the M365 plugin
 

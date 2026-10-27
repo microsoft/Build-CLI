@@ -1,11 +1,13 @@
 // Builds the M365 plugin from the fixture catalog, then checks that the bundled CLI works
 // offline from read-only data and matches the regular CLI's output for the same cached sessions.
+// With --package, it also builds the app package zip with atk, unzips it, and runs the checks
+// against the unzipped skill.
 import { execFile } from 'node:child_process';
 import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { promisify } from 'node:util';
+import { parseArgs, promisify } from 'node:util';
 import { normalizeCatalog } from '../dist/data/normalize.js';
 
 const execFileAsync = promisify(execFile);
@@ -13,6 +15,7 @@ const cliRoot = fileURLToPath(new URL('..', import.meta.url));
 const commandTimeoutMs = 60_000;
 const eventId = 'build-2025';
 const isWindows = process.platform === 'win32';
+const { values: options } = parseArgs({ options: { package: { type: 'boolean' } } });
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -33,11 +36,31 @@ async function setReadOnly(dir, readOnly) {
   if (!isWindows) await chmod(dir, readOnly ? 0o555 : 0o755);
 }
 
+async function listFiles(dir) {
+  const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((e) => e.isFile())
+    .map((e) => relative(dir, join(e.parentPath, e.name)).replaceAll('\\', '/'))
+    .sort();
+}
+
+// Windows' built-in tar (bsdtar) reads zip files; a Git Bash tar earlier on PATH may not.
+async function unzip(zip, dir) {
+  await mkdir(dir, { recursive: true });
+  if (isWindows) {
+    await execFileAsync(join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe'), ['-xf', zip, '-C', dir]);
+  } else {
+    await execFileAsync('unzip', ['-q', zip, '-d', dir]);
+  }
+}
+
 const root = await mkdtemp(join(tmpdir(), 'msevents-m365-smoke-'));
 const cacheDir = join(root, 'cache');
 const emptyCacheDir = join(root, 'empty-cache');
 const pluginDir = join(root, 'plugin');
-const skillDir = join(pluginDir, 'skills', 'microsoft-build');
+const builtSkillDir = join(pluginDir, 'skills', 'microsoft-build');
+const unzippedDir = join(root, 'unzipped');
+const skillDir = options.package ? join(unzippedDir, 'skills', 'microsoft-build') : builtSkillDir;
 const dataDir = join(skillDir, 'data');
 const workDir = join(root, 'work');
 const noNetwork = join(root, 'no-network.mjs');
@@ -65,13 +88,33 @@ try {
   await writeFile(noNetwork, "globalThis.fetch = () => { throw new Error('  network is disabled in smoke:m365'); };\n");
 
   const built = await run([
-      'scripts/build-m365-plugin.mjs',
+    'scripts/build-m365-plugin.mjs',
     '--sessions-dir', cacheDir,
     '--event', eventId,
     '--out', pluginDir,
     '--plugin-version', '1.0.0',
-  ], { cwd: cliRoot });
+    ...(options.package ? ['--package'] : []),
+  ], { cwd: cliRoot, timeout: options.package ? 600_000 : commandTimeoutMs });
   assert(built.code === 0, `build-m365-plugin failed:\n${built.stdout}${built.stderr}`);
+
+  if (options.package) {
+    await unzip(join(`${pluginDir}-app`, 'appPackage', 'build', 'appPackage.zip'), unzippedDir);
+    const appManifest = JSON.parse(await readFile(join(unzippedDir, 'manifest.json'), 'utf8'));
+    assert(
+      appManifest.agentSkills?.some((s) => s.folder === './skills/microsoft-build'),
+      'Expected the app package manifest to register skills/microsoft-build',
+    );
+    const builtFiles = await listFiles(builtSkillDir);
+    const packedFiles = await listFiles(skillDir);
+    assert(
+      packedFiles.join(',') === builtFiles.join(','),
+      `App package skill files differ from the plugin folder:\n  zip: ${packedFiles.join(', ')}\n  plugin: ${builtFiles.join(', ')}`,
+    );
+    for (const file of builtFiles) {
+      const [a, b] = await Promise.all([readFile(join(builtSkillDir, file)), readFile(join(skillDir, file))]);
+      assert(a.equals(b), `${file} in the app package differs from the plugin folder`);
+    }
+  }
 
   const dataFiles = (await readdir(dataDir)).sort();
   assert(
@@ -168,7 +211,8 @@ try {
   assert((await readdir(dataDir)).sort().join(',') === dataFiles.join(','), 'The bundled CLI changed the data folder');
   assert((await readdir(emptyCacheDir)).length === 0, 'The bundled CLI wrote to MSEVENTS_CACHE_DIR from the environment');
 
-  console.log(`M365 plugin smoke passed (${sameAsLive.length} commands match the CLI).`);
+  const source = options.package ? 'unzipped app package' : 'plugin folder';
+  console.log(`M365 plugin smoke passed (${source}; ${sameAsLive.length} commands match the CLI).`);
 } finally {
   if (dataLocked) await setReadOnly(dataDir, false);
   await rm(root, { recursive: true, force: true });

@@ -38,10 +38,11 @@ npx vitest run test\search.test.ts
 npx vitest run test\search.test.ts -t "finds sessions by title keyword"
 npm run smoke:fixture
 npm run smoke:m365
+npm run smoke:m365 -- --package
 npm run build:m365 -- --plugin-version 1.0.7 --package
 ```
 
-`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests. `npm run build:m365` also downloads live catalogs and writes the M365 plugin to `out\m365-plugin` (git-ignored); `--package` uses the `atk` CLI to build `out\m365-plugin-app\appPackage\build\appPackage.zip`. Never commit generated snapshot data.
+`npm run smoke:live` hits the live catalog; CI only runs it outside pull requests. `npm run build:m365` also downloads live catalogs and writes the M365 plugin to `out\m365-plugin` (git-ignored); `--package` uses the `atk` CLI to build `out\m365-plugin-app\appPackage\build\appPackage.zip`. `smoke:m365 -- --package` also needs `atk`: it builds the zip from the fixture, unzips it and runs the offline checks on the unzipped skill, as CI does. Never commit generated snapshot data.
 
 `.github\workflows\m365-plugin.yml` publishes the M365 plugin. It runs manually on `main` with a version input, which must be `x.y.z` and higher than every `m365-v*` tag; the M365 plugin is versioned separately from the plugin manifests. An optional events input (space-separated event IDs, empty for all) is passed to the build as `--event` flags. It creates release `m365-v<version>` with `microsoft-build-m365.zip` attached and marks it Latest, which the README links through `releases/latest/download/`, so don't mark other releases as Latest. Keep the build job read-only; only the job that creates the release gets `contents: write`.
 

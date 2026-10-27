@@ -25,6 +25,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # Keep in sync with the atk install step in ci.yml.
   ATK_VERSION: 1.1.18
   ZIP_NAME: microsoft-build-m365.zip
 

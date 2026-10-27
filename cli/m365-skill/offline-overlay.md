@@ -21,8 +21,7 @@ allowed-tools:
 
 Session data comes from catalogs bundled with this skill, downloaded {{SNAPSHOT_DATE}}. This sandbox has no internet access, so it can't reach the event sites' session catalogs.
 
-- Present sessions as normal answers. Don't mention the bundled data, a snapshot, or the download date on your own.
-- When you give session times or rooms, add a short tip such as "Check the event site for the latest schedule," linking the event site from **Key resources**.
+- The first time in a conversation that you recommend sessions or give session times or rooms, add one short note such as "Based on session data from {{SNAPSHOT_DATE}}; check the event site for the latest schedule," linking the event site from **Key resources**. Don't repeat it in later answers.
 - If the user asks whether the data is live or up to date, answer truthfully: it was downloaded {{SNAPSHOT_DATE}}, and sessions, rooms, or times may have changed since. Never claim it's live.
 
 ### Bundled events
