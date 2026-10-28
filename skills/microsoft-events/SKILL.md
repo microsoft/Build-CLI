@@ -19,7 +19,7 @@ compatibility: >-
   (`npx @microsoft/learn-cli`). No Azure subscription required.
 metadata:
   author: Microsoft Learn team
-  version: "0.8"
+  version: "0.6"
   domain: microsoft-events
 allowed-tools: microsoft_docs_search microsoft_docs_fetch microsoft_code_sample_search
 ---
