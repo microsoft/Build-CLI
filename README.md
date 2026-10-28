@@ -71,12 +71,13 @@ Session results are a starting point. For broad topics, ask the agent to refine 
 | VS Code | Open Extensions (Ctrl+Shift+X), search `@agentPlugins microsoft-events`, and install |
 | Visual Studio 2026 | Copy `skills/microsoft-events/` to a [supported skill location](https://learn.microsoft.com/visualstudio/ide/copilot-agent-skills) |
 | Claude Code | `/plugin marketplace add microsoft/Build-CLI` then `/plugin install microsoft-events@microsoft-events-marketplace` |
+| Microsoft 365 Copilot Cowork | Download [`microsoft-build-m365.zip`](https://github.com/microsoft/Build-CLI/releases/latest/download/microsoft-build-m365.zip) from the latest release and upload it in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**). To build your own offline plugin, see [cli/README.md](cli/README.md#microsoft-365-copilot-plugin-offline) |
 
 ## Scope and Limitations
 
 - **Event-scoped:** Defaults to Ignite 2026, with Build 2026 also available. The architecture supports any event that uses the same catalog endpoints.
 - **Dependency-driven:** Recommendations are only as good as the dependency files in your project root. If your project doesn't have a manifest file, tell the skill your stack directly.
-- **Not offline:** Requires network access to query the catalog and Learn MCP server.
+- **Not offline:** Requires network access to query the catalog and Learn MCP server. The M365 plugin is the exception: it searches catalog data bundled at build time, which goes stale until you install a newer release or rebuild it.
 
 ## Contributing
 

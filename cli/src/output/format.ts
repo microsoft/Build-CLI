@@ -1,4 +1,5 @@
 import type { Session, SearchResult, CacheMeta } from '../contracts.js';
+import { OFFLINE_ENV_VAR } from '../config.js';
 
 export function formatSessionShort(s: Session): string {
   const parts = [`[${s.sessionCode}] ${s.title}`];
@@ -78,10 +79,13 @@ function formatAge(ms: number): string {
 export function formatStatus(
   statuses: Array<{ eventId: string; meta: CacheMeta | null }>,
   json: boolean,
+  offline = false,
 ): string {
-  if (json) return JSON.stringify(statuses, null, 2);
+  if (json) {
+    return JSON.stringify(offline ? statuses.map((s) => ({ ...s, offline: true })) : statuses, null, 2);
+  }
   if (statuses.length === 0) return 'No known events configured.';
-  return statuses
+  const lines = statuses
     .map(({ eventId, meta }) => {
       if (!meta) return `  ${eventId}: not cached`;
       const cachedAge = formatAge(Date.now() - new Date(meta.fetchedAt).getTime());
@@ -90,6 +94,9 @@ export function formatStatus(
         : '';
       const status = meta.lastCheckStatus === 'failed' ? ', last check failed' : '';
       return `  ${eventId}: ${meta.sessionCount} sessions, cached ${cachedAge}${checkedAge}${status}`;
-    })
-    .join('\n');
+    });
+  if (offline) {
+    lines.unshift(`Offline (${OFFLINE_ENV_VAR}): cached data is read-only and won't be updated.`);
+  }
+  return lines.join('\n');
 }
