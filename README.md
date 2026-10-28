@@ -61,7 +61,7 @@ The skill is a thin layer over **live Microsoft event session catalogs** — no 
 Session results are a starting point. For broad topics, ask the agent to refine (*"show me more Foundry sessions about observability"*) or browse full catalogs at [ignite.microsoft.com/sessions](https://ignite.microsoft.com/sessions) and [build.microsoft.com/sessions](https://build.microsoft.com/sessions).
 
 > [!NOTE]
-> This skill defaults to **Ignite 2026** and also supports Build 2026, Ignite 2025, and Build 2025 catalogs. It is not a replacement for the event app or session browser — it's a developer and IT-pro complement to them.
+> This skill defaults to **Ignite 2026** and also supports Build 2026. It is not a replacement for the event app or session browser — it's a developer and IT-pro complement to them.
 
 ## Supported Clients
 
@@ -74,7 +74,7 @@ Session results are a starting point. For broad topics, ask the agent to refine 
 
 ## Scope and Limitations
 
-- **Event-scoped:** Defaults to Ignite 2026, with Build 2026, Ignite 2025, and Build 2025 also available. The architecture supports any event that uses the same catalog endpoints.
+- **Event-scoped:** Defaults to Ignite 2026, with Build 2026 also available. The architecture supports any event that uses the same catalog endpoints.
 - **Dependency-driven:** Recommendations are only as good as the dependency files in your project root. If your project doesn't have a manifest file, tell the skill your stack directly.
 - **Not offline:** Requires network access to query the catalog and Learn MCP server.
 

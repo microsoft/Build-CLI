@@ -6,7 +6,7 @@ description: >-
   stack, scaffold projects from sessions, and plan your event schedule. Activate
   when users mention sessions, schedule, what's new, Build, Ignite,
   Microsoft event, conference, or reference a session code (BRK, DEM, LAB, KEY,
-  LTG, THR). Supports Ignite 2026, Build 2026, Ignite 2025, and Build 2025
+  LTG, THR). Supports Ignite 2026 and Build 2026
   catalogs. Uses the msevents CLI for fast local search and Learn MCP Server for
   docs.
 license: Apache-2.0
@@ -19,7 +19,7 @@ compatibility: >-
   (`npx @microsoft/learn-cli`). No Azure subscription required.
 metadata:
   author: Microsoft Learn team
-  version: "0.7"
+  version: "0.8"
   domain: microsoft-events
 allowed-tools: microsoft_docs_search microsoft_docs_fetch microsoft_code_sample_search
 ---
@@ -49,8 +49,6 @@ allowed-tools: microsoft_docs_search microsoft_docs_fetch microsoft_code_sample_
 |-------|----------|-----------------|----------|----------|
 | Ignite 2026 | `ignite-2026` | `https://aka.ms/ignite2026-session-info` | San Francisco, CA (Moscone Center) | PT (America/Los_Angeles) |
 | Build 2026 | `build-2026` | `https://aka.ms/build2026-session-info` | San Francisco, CA | PDT (UTC-7) |
-| Ignite 2025 | `ignite-2025` | `https://aka.ms/ignite2025-session-info` | Chicago, IL | CST (UTC-6) |
-| Build 2025 | `build-2025` | `https://aka.ms/build2025-session-info` | Seattle, WA | PDT (UTC-7) |
 
 ### Recognized event names (not yet configured)
 
@@ -181,10 +179,6 @@ If the CLI is not available (not installed, npx fails), fall back to fetching th
 GET https://aka.ms/ignite2026-session-info
 # Build 2026:
 GET https://aka.ms/build2026-session-info
-# Ignite 2025:
-GET https://aka.ms/ignite2025-session-info
-# Build 2025:
-GET https://aka.ms/build2025-session-info
 ```
 
 The response is a JSON array of session objects. Key fields:
@@ -232,6 +226,7 @@ When listing sessions, always include a session page URL when deterministically 
 1. **Ignite sessions**: build the URL from catalog fields:
    - `https://ignite.microsoft.com/{langLocale}/sessions/{sessionInstanceId}?source=sessions`
    - Use `langLocale` and `sessionInstanceId` from the catalog record.
+   - If CLI output omits either field, fetch the corresponding raw catalog record by `sessionCode` from the configured endpoint before constructing the URL.
    - Never invent or guess opaque IDs.
 2. **Build sessions**: use:
    - `https://build.microsoft.com/sessions/{sessionCode}`
@@ -564,18 +559,20 @@ Use this whenever recommendations are personalized.
 
 ## Context before recommendations
 
-Before recommending sessions or documentation, establish what the developer actually uses. Do not skip this step.
+Before recommending sessions or documentation, establish what the user actually uses. Do not skip this step.
 
-1. Scan the project for tech stack signals: package.json, requirements.txt, .csproj, go.mod, Dockerfile, bicep/terraform files, .github/workflows, docker-compose.yml
-2. Extract concrete dependencies, frameworks, SDK versions, and Azure services in use
+1. Choose one inventory path:
+   - **Project-based inventory (requires explicit consent):** scan project tech-stack signals (`package.json`, `requirements.txt`, `.csproj`, `go.mod`, `Dockerfile`, bicep/terraform files, `.github/workflows`, `docker-compose.yml`) only after user approval.
+   - **Profile-based inventory:** use the user-provided stack and role context when project-file access is not approved or not needed.
+2. Extract concrete dependencies, frameworks, SDK versions, and Azure services in use.
 3. Translate package names to Microsoft product names for effective searching. Common patterns:
    - npm `@azure/*` packages map to Azure service names (e.g., `@azure/cosmos` -> "Azure Cosmos DB", `@azure/functions` -> "Azure Functions")
    - NuGet `Microsoft.*` and `Azure.*` packages map to .NET or Azure service names
    - pip `azure-*` packages follow similar patterns (e.g., `azure-storage-blob` -> "Azure Blob Storage")
    - For Azure services, canonical product names are listed at https://github.com/MicrosoftDocs/Agent-Skills (191 Azure services as directory names like `azure-cosmos-db`, `azure-functions`)
    - When the mapping is unclear, use the package name as a search term — Learn MCP handles fuzzy matching
-4. Build an inventory: language(s), frameworks, Azure services, data stores, CI/CD tools, with both package names and product names
-5. Only then query Learn MCP and search sessions, using the inventory to scope searches
+4. Build a validated inventory: language(s), frameworks, Azure services, data stores, CI/CD tools, with both package names and product names.
+5. Only then query Learn MCP and search sessions, using the validated inventory to scope searches.
 
 If the user has no project open, ask what they work with. Do not recommend sessions or docs based on vague interest areas alone — get to specific technologies.
 
@@ -673,12 +670,8 @@ A good response from this skill:
 | CLI source | `../../cli/` |
 | Ignite 2026 session catalog | `https://aka.ms/ignite2026-session-info` |
 | Build 2026 session catalog | `https://aka.ms/build2026-session-info` |
-| Build 2025 session catalog | `https://aka.ms/build2025-session-info` |
-| Ignite 2025 session catalog | `https://aka.ms/ignite2025-session-info` |
 | Ignite 2026 News & Announcements | If not published in this table yet, search `news.microsoft.com` for Ignite 2026 announcements |
 | Build 2026 News & Announcements | `https://aka.ms/build2026-news` |
-| Build 2025 News & Announcements | `https://aka.ms/build2025-news` |
-| Ignite 2025 News & Announcements | `https://aka.ms/ignite2025-news` |
 | Learn MCP Server | `https://learn.microsoft.com/api/mcp` |
 | Learn MCP Server docs | `https://learn.microsoft.com/en-us/training/support/mcp` |
 | Azure Agent Skills (product names) | `https://github.com/MicrosoftDocs/Agent-Skills` |
@@ -689,22 +682,4 @@ Use these rules when users ask for repo links tied to Ignite sessions:
 
 1. Prefer explicit links from trusted event threads when available.
 2. Otherwise use the observed naming convention `https://github.com/microsoft/ignite26-<SESSIONCODE>` and verify the repo exists before sharing.
-3. For collaboration/onboarding requests, keep operational ownership separate from technical guidance (for example, John Gruszczyk coordinating org-onboarding follow-ups).
-
-Known Ignite 2026 repos shared in Teams:
-
-- `ignite26-BRK240`
-- `ignite26-BRK243`
-- `ignite26-BRK244`
-- `ignite26-BRK300`
-- `ignite26-BRK388`
-- `ignite26-BRK389`
-- `ignite26-BRK390`
-- `ignite26-BRK391`
-- `ignite26-BRK392`
-- `ignite26-BRK393`
-- `ignite26-BRK394`
-- `ignite26-BRK395`
-- `ignite26-LTG1185`
-- `ignite26-THR888`
-- `ignite26-THR889`
+3. Keep recommendations to public, verifiable resources unless the user explicitly asks for internal-only links.
