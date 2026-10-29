@@ -39,7 +39,7 @@ const SKILL_SECTION = '## Session catalog access';
 // wording change in the source SKILL.md fails the build until this list is updated.
 const SKILL_REWRITES = [
   {
-    find: /Uses the msevents CLI for fast local search and\s+Learn MCP Server for docs\./,
+    find: /Uses the msevents CLI for fast local search and\s+Learn MCP Server for\s+docs\./,
     replace: 'Searches session catalogs bundled with this skill and uses Microsoft Learn for docs.',
   },
   { find: 'event ID and endpoint from', replace: 'event ID from' },
