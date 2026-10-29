@@ -16,6 +16,7 @@ const commandTimeoutMs = 60_000;
 const eventId = 'build-2025';
 const isWindows = process.platform === 'win32';
 const { values: options } = parseArgs({ options: { package: { type: 'boolean' } } });
+const sourceSkillsDir = join(cliRoot, '..', 'skills');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -44,6 +45,11 @@ async function listFiles(dir) {
     .sort();
 }
 
+const sourceSkillDirs = (await readdir(sourceSkillsDir, { withFileTypes: true }))
+  .filter((entry) => entry.isDirectory());
+assert(sourceSkillDirs.length === 1, `Expected one source skill folder, found ${sourceSkillDirs.length}`);
+const skillName = sourceSkillDirs[0].name;
+
 // Windows' built-in tar (bsdtar) reads zip files; a Git Bash tar earlier on PATH may not.
 async function unzip(zip, dir) {
   await mkdir(dir, { recursive: true });
@@ -58,9 +64,9 @@ const root = await mkdtemp(join(tmpdir(), 'msevents-m365-smoke-'));
 const cacheDir = join(root, 'cache');
 const emptyCacheDir = join(root, 'empty-cache');
 const pluginDir = join(root, 'plugin');
-const builtSkillDir = join(pluginDir, 'skills', 'microsoft-build');
+const builtSkillDir = join(pluginDir, 'skills', skillName);
 const unzippedDir = join(root, 'unzipped');
-const skillDir = options.package ? join(unzippedDir, 'skills', 'microsoft-build') : builtSkillDir;
+const skillDir = options.package ? join(unzippedDir, 'skills', skillName) : builtSkillDir;
 const dataDir = join(skillDir, 'data');
 const workDir = join(root, 'work');
 const noNetwork = join(root, 'no-network.mjs');
@@ -101,8 +107,8 @@ try {
     await unzip(join(`${pluginDir}-app`, 'appPackage', 'build', 'appPackage.zip'), unzippedDir);
     const appManifest = JSON.parse(await readFile(join(unzippedDir, 'manifest.json'), 'utf8'));
     assert(
-      appManifest.agentSkills?.some((s) => s.folder === './skills/microsoft-build'),
-      'Expected the app package manifest to register skills/microsoft-build',
+      appManifest.agentSkills?.some((s) => s.folder === `./skills/${skillName}`),
+      `Expected the app package manifest to register skills/${skillName}`,
     );
     const builtFiles = await listFiles(builtSkillDir);
     const packedFiles = await listFiles(skillDir);
@@ -128,7 +134,7 @@ try {
       assert(!text.includes('{{'), 'SKILL.md has unfilled placeholders');
       assert(text.includes('2026-01-01'), 'Expected SKILL.md to show the snapshot date from the cache meta file');
       assert(text.includes(`| \`${eventId}\` | ${sessions.length} |`), 'Expected SKILL.md to list the bundled event');
-      const repoSkill = (await readFile('../skills/microsoft-build/SKILL.md', 'utf8')).replace(/\r\n?/g, '\n');
+      const repoSkill = (await readFile(join(sourceSkillsDir, skillName, 'SKILL.md'), 'utf8')).replace(/\r\n?/g, '\n');
       for (const heading of repoSkill.match(/^## .+$/gm)) {
         assert(text.includes(`\n${heading}\n`), `Expected SKILL.md to keep the repo skill's "${heading}" section`);
       }

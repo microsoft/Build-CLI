@@ -1,6 +1,6 @@
 ---
 # Offline changes for the M365 plugin's SKILL.md. `npm run build:m365` builds that SKILL.md from
-# skills/microsoft-build/SKILL.md: each key here replaces the same frontmatter key (an empty value
+# the repository's skill: each key here replaces the same frontmatter key (an empty value
 # removes it), and the body below replaces the "## Session catalog access" section. The build
 # script rewrites the rest of the skill for offline use; see SKILL_REWRITES in
 # cli/scripts/build-m365-plugin.mjs.
@@ -11,7 +11,7 @@ compatibility: >-
   come from the Microsoft Learn MCP Server or the agent's built-in web tools.
 metadata:
   author: Microsoft Learn partnerships team
-  domain: microsoft-build
+  domain: "{{SKILL_NAME}}"
   snapshot: "{{SNAPSHOT_DATE}}"
   msevents: "{{CLI_VERSION}}"
 allowed-tools:
