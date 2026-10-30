@@ -13,7 +13,7 @@ describe('validateEventId', () => {
   });
 
   it('returns true for a known event ID', () => {
-    expect(validateEventId('build-2025')).toBe(true);
+    expect(validateEventId('build-2026')).toBe(true);
     expect(process.exitCode).toBeUndefined();
     expect(console.error).not.toHaveBeenCalled();
   });
@@ -25,7 +25,7 @@ describe('validateEventId', () => {
       expect.stringContaining('Unknown event: unknown-event'),
     );
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('build-2025'),
+      expect.stringContaining('build-2026'),
     );
   });
 });

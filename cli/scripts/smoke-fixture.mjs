@@ -9,7 +9,7 @@ import { normalizeCatalog } from '../dist/data/normalize.js';
 const execFileAsync = promisify(execFile);
 const cliRoot = fileURLToPath(new URL('..', import.meta.url));
 const commandTimeoutMs = 60_000;
-const eventId = 'build-2025';
+const eventId = 'build-2026';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

@@ -13,7 +13,7 @@ import { normalizeCatalog } from '../dist/data/normalize.js';
 const execFileAsync = promisify(execFile);
 const cliRoot = fileURLToPath(new URL('..', import.meta.url));
 const commandTimeoutMs = 60_000;
-const eventId = 'build-2025';
+const eventId = 'build-2026';
 const isWindows = process.platform === 'win32';
 const { values: options } = parseArgs({ options: { package: { type: 'boolean' } } });
 const sourceSkillsDir = join(cliRoot, '..', 'skills');
@@ -207,9 +207,9 @@ try {
   assert(statusText.stdout.startsWith('Offline (MSEVENTS_OFFLINE)'), `Expected an offline line in status:\n${statusText.stdout}`);
   assert(!statusText.stdout.includes('last check failed'), 'Expected the frozen meta to drop the failed-check state');
 
-  const missing = await snapshot('sessions', '--query', 'agents', '--event', 'ignite-2025', '--json');
+  const missing = await snapshot('sessions', '--query', 'agents', '--event', 'ignite-2026', '--json');
   assert(missing.code === 0 && JSON.parse(missing.stdout).length === 0, 'Expected no results for an event outside the snapshot');
-  assert(missing.stderr.includes('no cached sessions for Microsoft Ignite 2025'), `Expected a missing-event notice:\n${missing.stderr}`);
+  assert(missing.stderr.includes('no cached sessions for Microsoft Ignite 2026'), `Expected a missing-event notice:\n${missing.stderr}`);
 
   const all = await snapshot('sessions', '--query', 'Foundry', '--json');
   assert(all.code === 0 && JSON.parse(all.stdout).length > 0, 'Expected a search across all events to use the bundled event');

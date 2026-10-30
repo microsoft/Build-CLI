@@ -37,7 +37,7 @@ function session(event: string, sessionCode: string): Session {
 }
 
 const dueMeta: CacheMeta = {
-  eventId: 'build-2025',
+  eventId: 'build-2026',
   fetchedAt: '2020-01-01T00:00:00.000Z',
   checkedAt: '2020-01-01T00:00:00.000Z',
   nextCheckAt: '2020-01-01T00:20:00.000Z',
@@ -77,8 +77,8 @@ describe('offline mode (MSEVENTS_OFFLINE)', () => {
     vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    await writeFile(join(cacheDir, 'build-2025-sessions.json'), JSON.stringify([session('build-2025', 'BRK100')]));
-    await writeFile(join(cacheDir, 'build-2025-meta.json'), JSON.stringify(dueMeta));
+    await writeFile(join(cacheDir, 'build-2026-sessions.json'), JSON.stringify([session('build-2026', 'BRK100')]));
+    await writeFile(join(cacheDir, 'build-2026-meta.json'), JSON.stringify(dueMeta));
   });
 
   afterEach(async () => {
@@ -91,12 +91,12 @@ describe('offline mode (MSEVENTS_OFFLINE)', () => {
   });
 
   it('reads cached sessions without revalidating a cache that is due', async () => {
-    const sessions = await ensureCache('build-2025');
+    const sessions = await ensureCache('build-2026');
 
     expect(sessions.map((s) => s.sessionCode)).toEqual(['BRK100']);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(stderrOutput()).toBe('');
-    expect(JSON.parse(await readFile(join(cacheDir, 'build-2025-meta.json'), 'utf-8'))).toEqual(dueMeta);
+    expect(JSON.parse(await readFile(join(cacheDir, 'build-2026-meta.json'), 'utf-8'))).toEqual(dueMeta);
   });
 
   it('skips events with no cache, notes them once, and writes nothing', async () => {
@@ -104,20 +104,20 @@ describe('offline mode (MSEVENTS_OFFLINE)', () => {
 
     expect(sessions.map((s) => s.sessionCode)).toEqual(['BRK100']);
     expect(fetchMock).not.toHaveBeenCalled();
-    const uncached = KNOWN_EVENTS.filter((e) => e.id !== 'build-2025').map((e) => e.name);
+    const uncached = KNOWN_EVENTS.filter((e) => e.id !== 'build-2026').map((e) => e.name);
     expect(uncached.length).toBeGreaterThan(0);
     expect(stderrOutput()).toBe(`Offline (MSEVENTS_OFFLINE): no cached sessions for ${uncached.join(', ')}.\n`);
-    expect((await readdir(cacheDir)).sort()).toEqual(['build-2025-meta.json', 'build-2025-sessions.json']);
+    expect((await readdir(cacheDir)).sort()).toEqual(['build-2026-meta.json', 'build-2026-sessions.json']);
   });
 
   it('returns no sessions for an uncached event', async () => {
-    expect(await ensureCache('ignite-2025')).toEqual([]);
+    expect(await ensureCache('ignite-2026')).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(stderrOutput()).toContain('no cached sessions for Microsoft Ignite 2025');
+    expect(stderrOutput()).toContain('no cached sessions for Microsoft Ignite 2026');
   });
 
   it('makes refresh fail without fetching', async () => {
-    await refresh('build-2025', true);
+    await refresh('build-2026', true);
 
     expect(process.exitCode).toBe(1);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -127,8 +127,8 @@ describe('offline mode (MSEVENTS_OFFLINE)', () => {
 
 describe('formatStatus in offline mode', () => {
   const statuses = [
-    { eventId: 'build-2025', meta: { ...dueMeta, lastCheckStatus: 'updated' as const } },
-    { eventId: 'ignite-2025', meta: null },
+    { eventId: 'build-2026', meta: { ...dueMeta, lastCheckStatus: 'updated' as const } },
+    { eventId: 'ignite-2026', meta: null },
   ];
 
   it('adds an offline line to text output', () => {
