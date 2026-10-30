@@ -35,7 +35,7 @@ msevents sessions --tech "Microsoft Foundry"
 msevents sessions --tech "Azure Cosmos DB" --type lab
 msevents sessions --speaker "Scott Hanselman"
 msevents sessions --tech "Microsoft Foundry" --speaker "Yina Arenas"
-msevents sessions --event build-2025 --query "Foundry"
+msevents sessions --event build-2026 --query "Foundry"
 msevents session BRK155
 msevents refresh
 msevents refresh --event build-2026
@@ -49,7 +49,7 @@ Available commands:
   - `--tech <name>` search by technology (matches product, tags, topic, languages)
   - `--speaker <name>` search by speaker name
   - `--type <type>` filter by session type (breakout, lab, demo, keynote)
-  - `--event <id>` filter to a specific event (e.g., `build-2026`, `ignite-2025`)
+  - `--event <id>` filter to a specific event (e.g., `ignite-2026`, `build-2026`)
   - `--limit <n>` max results (default: 10)
 - `session <code>` looks up a specific session by code. Searches all cached events; disambiguates if the code appears in multiple events.
   - `--event <id>` scope to a specific event
@@ -71,8 +71,6 @@ msevents session BRK155 --json
 |-------|----------|--------|
 | Ignite 2026 | `ignite-2026` | Live |
 | Build 2026 | `build-2026` | Live |
-| Ignite 2025 | `ignite-2025` | Live |
-| Build 2025 | `build-2025` | Live |
 
 Use `--event <id>` to filter to a single event. Without it, commands search across everything cached.
 
