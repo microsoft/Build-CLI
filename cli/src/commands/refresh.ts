@@ -1,9 +1,14 @@
-import { KNOWN_EVENTS } from '../config.js';
+import { KNOWN_EVENTS, OFFLINE_ENV_VAR, isOfflineMode } from '../config.js';
 import { fetchAndCache } from '../data/cache.js';
 import { FetchError } from '../errors.js';
 import { validateEventId } from './common.js';
 
 export async function refresh(eventFilter?: string, force: boolean = false): Promise<void> {
+  if (isOfflineMode()) {
+    console.error(`refresh isn't available because ${OFFLINE_ENV_VAR} is set; the cached session data can't be updated.`);
+    process.exitCode = 1;
+    return;
+  }
   if (eventFilter && !validateEventId(eventFilter)) return;
 
   const events = eventFilter

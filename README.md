@@ -1,8 +1,8 @@
-# Microsoft Build CLI
+# Microsoft Events CLI
 
-A [GitHub Copilot CLI](https://github.com/features/copilot/cli/) skill that connects your local project to the Microsoft Build session catalog. It reads your dependencies, finds relevant sessions, and helps you act on what you learn — all from your terminal.
+A [GitHub Copilot CLI](https://github.com/features/copilot/cli/) skill that connects your local project to Microsoft event session catalogs. It reads your dependencies, finds relevant sessions, and helps you act on what you learn — all from your terminal.
 
-![Build CLI](Build-CLI.png)
+![Microsoft Events CLI](Build-CLI.png)
 
 ## Quick Start
 
@@ -16,10 +16,10 @@ A [GitHub Copilot CLI](https://github.com/features/copilot/cli/) skill that conn
    ```
 3. Try:
    ```
-   What Build sessions are relevant to my project?
+   What Ignite 2026 sessions are relevant to my project?
    ```
 
-The skill reads `package.json`, `requirements.txt`, `.csproj`, `go.mod`, and other dependency files, maps them to Microsoft products, and searches the live Build 2026 session catalog.
+The skill reads `package.json`, `requirements.txt`, `.csproj`, `go.mod`, and other dependency files, maps them to Microsoft products, and searches live event catalogs (default: Ignite 2026).
 
 ## Requirements
 
@@ -30,36 +30,38 @@ The skill reads `package.json`, `requirements.txt`, `.csproj`, `go.mod`, and oth
 
 📺 **[Watch the overview video](https://www.youtube.com/watch?v=gm8gKtrd3po)** to see it in action.
 
-### Before Build — plan your schedule
+### Before an event — plan your schedule
 
 | Ask the skill to…                        | Example                                               |
 |------------------------------------------|-------------------------------------------------------|
-| Find sessions for your project           | *"What Build sessions should I attend?"*              |
-| See what's new for your tech stack       | *"What's new at Build for Azure Cosmos DB?"*          |
-| Look up a session by code                | *"Tell me about session BRK155"*                      |
+| Build a personalized session path        | *"Find sessions for me for an IT admin focused on Entra, Intune, and Defender."* |
+| See what's new for your stack            | *"What's new for me at Ignite with Node.js, TypeScript, Functions, and Cosmos DB?"* |
+| Look up a specific session               | *"Tell me about session BRK155."*                     |
 
-### During Build — capture what matters
-
-| Ask the skill to…                        | Example                                               |
-|------------------------------------------|-------------------------------------------------------|
-| Log notes tied to a session              | *"Log a note from session BRK155: great agent demo"*  |
-| Get next steps after a session           | *"What should I do after session BRK155?"*            |
-
-### After Build — ship what you learned
+### During an event — capture what matters
 
 | Ask the skill to…                        | Example                                               |
 |------------------------------------------|-------------------------------------------------------|
-| Scaffold a project from a session        | *"Scaffold a project from session BRK155"*            |
-| See what changed for your project        | *"What changed at Build for my project?"*             |
+| Log notes tied to a session              | *"Log a note from session BRK155: key governance steps and rollout risks."* |
+| Get immediate follow-up actions          | *"What should I do after session BRK155?"*            |
+| Build a supplemental learning path       | *"Build a supplemental learning path for BRK155 and BRK223."* |
+
+### After an event — ship what you learned
+
+| Ask the skill to…                        | Example                                               |
+|------------------------------------------|-------------------------------------------------------|
+| Create an operational checklist          | *"Create an operational learning checklist from BRK155 for our IT admin team."* |
+| Scaffold from a technical session        | *"Scaffold a project from session BRK155."*           |
+| Ground recommendations in your context   | *"Ground recommendations in my authorized context and show traceability."* |
 
 ## How It Works
 
-The skill is a thin layer over the **live Build 2026 catalog API** — no stale data, no manual updates. For SDK docs and code samples, it falls back to the [Microsoft Learn MCP Server](https://learn.microsoft.com/training/support/mcp).
+The skill is a thin layer over **live Microsoft event session catalogs** — no stale data, no manual updates. For SDK docs and code samples, it falls back to the [Microsoft Learn MCP Server](https://learn.microsoft.com/training/support/mcp).
 
-Session results are a starting point. For broad topics, ask the agent to refine (*"show me more Foundry sessions about observability"*) or browse the full catalog at [build.microsoft.com/sessions](https://build.microsoft.com/sessions).
+Session results are a starting point. For broad topics, ask the agent to refine (*"show me more Foundry sessions about observability"*) or browse full catalogs at [ignite.microsoft.com/sessions](https://ignite.microsoft.com/sessions) and [build.microsoft.com/sessions](https://build.microsoft.com/sessions).
 
 > [!NOTE]
-> Build-CLI targets **Build 2026** and also indexes past events (Build 2025, Ignite 2025). It supports any future event that follows the same catalog endpoint pattern. It is not a replacement for the event app or session browser — it's a developer-first complement to them.
+> This skill defaults to **Ignite 2026** and also supports Build 2026. It is not a replacement for the event app or session browser — it's a developer and IT-pro complement to them.
 
 ## Supported Clients
 
@@ -67,14 +69,15 @@ Session results are a starting point. For broad topics, ask the agent to refine 
 |--------|---------------|
 | GitHub Copilot CLI | `/plugin install microsoft/Build-CLI` then `/restart` |
 | VS Code | Open Extensions (Ctrl+Shift+X), search `@agentPlugins microsoft-events`, and install |
-| Visual Studio 2026 | Copy `skills/microsoft-build/` to a [supported skill location](https://learn.microsoft.com/visualstudio/ide/copilot-agent-skills) |
+| Visual Studio 2026 | Copy `skills/microsoft-events/` to a [supported skill location](https://learn.microsoft.com/visualstudio/ide/copilot-agent-skills) |
 | Claude Code | `/plugin marketplace add microsoft/Build-CLI` then `/plugin install microsoft-events@microsoft-events-marketplace` |
+| Microsoft 365 Copilot Cowork | Download [`microsoft-events-m365.zip`](https://github.com/microsoft/Build-CLI/releases/latest/download/microsoft-events-m365.zip) from the latest release and upload it in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**). To build your own offline plugin, see [cli/README.md](cli/README.md#microsoft-365-copilot-plugin-offline) |
 
 ## Scope and Limitations
 
-- **Event-scoped:** Targets Build 2026, with Build 2025 and Ignite 2025 also available. The architecture supports any event that uses the same catalog endpoints.
+- **Event-scoped:** Defaults to Ignite 2026, with Build 2026 also available. The architecture supports any event that uses the same catalog endpoints.
 - **Dependency-driven:** Recommendations are only as good as the dependency files in your project root. If your project doesn't have a manifest file, tell the skill your stack directly.
-- **Not offline:** Requires network access to query the catalog and Learn MCP server.
+- **Not offline:** Requires network access to query the catalog and Learn MCP server. The M365 plugin is the exception: it searches catalog data bundled at build time, which goes stale until you install a newer release or rebuild it.
 
 ## Contributing
 

@@ -25,10 +25,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22.x
           cache: npm
@@ -45,6 +45,15 @@ jobs:
 
       - name: Smoke test CLI commands with cached fixture
         run: npm run smoke:fixture
+
+      # Keep the version in sync with ATK_VERSION in m365-plugin.yml.
+      - name: Install Microsoft 365 Agents Toolkit CLI
+        env:
+          ATK_VERSION: 1.1.18
+        run: npm install -g --no-audit --no-fund "@microsoft/m365agentstoolkit-cli@$ATK_VERSION"
+
+      - name: Smoke test M365 plugin bundle and app package
+        run: npm run smoke:m365 -- --package
 
       - name: Smoke test live catalog
         if: github.event_name != 'pull_request'
