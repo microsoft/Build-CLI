@@ -207,15 +207,10 @@ async function readCachedEvent(dir, event) {
 
   const sessions = await readJson(file);
   if (!Array.isArray(sessions) || sessions.length === 0) fail(`${file} has no sessions`);
-  const seen = new Set();
   for (const session of sessions) {
     if (typeof session?.sessionCode !== 'string' || !session.sessionCode || session.event !== event.id) {
       fail(`${file} contains a record that isn't a normalized ${event.id} session`);
     }
-    if (seen.has(session.sessionCode)) {
-      fail(`${file} repeats session code ${session.sessionCode}; the search index needs unique codes per event`);
-    }
-    seen.add(session.sessionCode);
   }
 
   const metaFile = join(dir, `${event.id}-meta.json`);

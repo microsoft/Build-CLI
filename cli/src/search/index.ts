@@ -34,7 +34,16 @@ export function buildIndex(sessions: Session[]): void {
       return (doc as unknown as Record<string, string>)[fieldName] ?? '';
     },
   });
-  index.addAll(sessions);
+  // Some catalogs list a session once per time slot. Index only the first row
+  // per ID, because MiniSearch throws on duplicate IDs; findSession still
+  // returns every row.
+  const seen = new Set<string>();
+  index.addAll(sessions.filter((s) => {
+    const id = `${s.event}::${s.sessionCode}`;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  }));
 }
 
 export interface SearchOptions {
