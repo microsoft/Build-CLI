@@ -1,11 +1,11 @@
 // Builds the Microsoft 365 Copilot plugin (a Claude-format plugin folder for Cowork) with an offline
-// session snapshot: skills/microsoft-build/{SKILL.md, scripts/msevents.mjs, data/<event>-*.json}.
+// session snapshot: skills/<skill>/{SKILL.md, scripts/msevents.mjs, data/<event>-*.json}.
 // scripts/msevents.mjs is the whole msevents CLI bundled into one file. Its banner turns on
 // offline mode (MSEVENTS_OFFLINE) and points the cache at ../data, so data/ is a frozen cache.
-// SKILL.md is the repo skill (skills/microsoft-build/SKILL.md) rewritten for offline use with
+// SKILL.md is the repo skill rewritten for offline use with
 // cli/m365-skill/offline-overlay.md. Run through `npm run build:m365` so dist/ is up to date.
 import { execFile } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, relative, resolve } from 'node:path';
@@ -17,22 +17,29 @@ import { KNOWN_EVENTS } from '../dist/config.js';
 const execFileAsync = promisify(execFile);
 const cliRoot = fileURLToPath(new URL('..', import.meta.url));
 const repoRoot = resolve(cliRoot, '..');
-const SKILL_NAME = 'microsoft-build';
+const skillRoot = join(repoRoot, 'skills');
+const skillNames = readdirSync(skillRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && existsSync(join(skillRoot, entry.name, 'SKILL.md')))
+  .map((entry) => entry.name);
+if (skillNames.length !== 1) {
+  throw new Error(`Expected exactly one skill folder with SKILL.md under ${skillRoot}; found ${skillNames.length}`);
+}
+const SKILL_NAME = skillNames[0];
 const SCRIPT_FILE = 'msevents.mjs';
 const MB = 1024 * 1024;
 // Cowork limits for files that ship next to SKILL.md.
 const COMPANION_LIMITS = { files: 20, fileBytes: 5 * MB, totalBytes: 10 * MB };
 const SKILL_DESCRIPTION_MAX_CHARS = 1024;
-const SKILL_SOURCE = join(repoRoot, 'skills', SKILL_NAME, 'SKILL.md');
+const SKILL_SOURCE = join(skillRoot, SKILL_NAME, 'SKILL.md');
 const SKILL_OVERLAY = join(cliRoot, 'm365-skill', 'offline-overlay.md');
 // The repo skill section that the overlay's body replaces.
 const SKILL_SECTION = '## Session catalog access';
 
 // Rewrites that turn the repo skill's online steps into offline ones. Each one must match, so a
-// wording change in skills/microsoft-build/SKILL.md fails the build until this list is updated.
+// wording change in the source SKILL.md fails the build until this list is updated.
 const SKILL_REWRITES = [
   {
-    find: /Uses the msevents CLI for fast local search and\s+Learn MCP Server for docs\./,
+    find: /Uses the msevents CLI for fast local search and\s+Learn MCP Server for\s+docs\./,
     replace: 'Searches session catalogs bundled with this skill and uses Microsoft Learn for docs.',
   },
   { find: 'event ID and endpoint from', replace: 'event ID from' },
@@ -502,6 +509,7 @@ async function main() {
   const snapshotDate = collected.map(({ meta }) => meta.fetchedAt).sort()[0].slice(0, 10);
 
   const skill = buildSkill(await readFile(SKILL_SOURCE, 'utf8'), await readFile(SKILL_OVERLAY, 'utf8'), {
+    SKILL_NAME,
     SNAPSHOT_DATE: snapshotDate,
     CLI_VERSION: cliVersion,
     SNAPSHOT_EVENTS: collected
