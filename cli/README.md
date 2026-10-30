@@ -110,7 +110,7 @@ node dist/index.js --help
 
 Microsoft 365 Copilot Cowork runs skill scripts in a sandbox with Node.js but no network access, so `npx -y @microsoft/events-cli` can't run there. `npm run build:m365` produces a Cowork-ready plugin that ships the whole `msevents` CLI as one bundled file, `scripts/msevents.mjs`, together with a frozen snapshot of its cache in `data/`. The bundle always runs in offline mode (`MSEVENTS_OFFLINE`) with its cache folder set to `../data/`, so search results match `msevents` for the same catalog data.
 
-Each [M365 plugin release](https://github.com/microsoft/Build-CLI/releases) (tagged `m365-v<version>`) includes a prebuilt `microsoft-build-m365.zip` (see [Publishing the M365 plugin](#publishing-the-m365-plugin)). To build your own:
+Each [M365 plugin release](https://github.com/microsoft/Build-CLI/releases) (tagged `m365-v<version>`) includes a prebuilt `microsoft-events-m365.zip` (see [Publishing the M365 plugin](#publishing-the-m365-plugin)). To build your own:
 
 ```bash
 cd cli
@@ -133,15 +133,15 @@ out/
 ├── m365-plugin/                    # plugin folder
 │   ├── .claude-plugin/plugin.json
 │   ├── .mcp.json
-│   └── skills/microsoft-build/
-│       ├── SKILL.md                # skills/microsoft-build/SKILL.md, rewritten for offline use
+│   └── skills/microsoft-events/
+│       ├── SKILL.md                # skills/microsoft-events/SKILL.md, rewritten for offline use
 │       ├── scripts/msevents.mjs    # the msevents CLI, bundled and locked to offline mode
 │       └── data/                   # frozen cache: <event>-sessions.json and <event>-meta.json
 └── m365-plugin-app/                # with --package: atk project
     └── appPackage/build/appPackage.zip
 ```
 
-The Cowork SKILL.md is built from the repo skill, `skills/microsoft-build/SKILL.md`, so both stay in sync. The repo skill tells the agent to use `npx`, the catalog endpoints and `refresh`, none of which work in Cowork's offline sandbox, so the build:
+The Cowork SKILL.md is built from the repo skill, `skills/microsoft-events/SKILL.md`, so both stay in sync. The repo skill tells the agent to use `npx`, the catalog endpoints and `refresh`, none of which work in Cowork's offline sandbox, so the build:
 
 - replaces the `## Session catalog access` section and the `compatibility`, `metadata` and `allowed-tools` frontmatter with [`cli/m365-skill/offline-overlay.md`](m365-skill/offline-overlay.md), filling in the snapshot date and bundled events;
 - rewrites the remaining online steps (`npx -y @microsoft/events-cli` becomes `node scripts/msevents.mjs`, "Without CLI" fallbacks and catalog URLs are removed) with `SKILL_REWRITES` in `scripts/build-m365-plugin.mjs`;
@@ -149,13 +149,13 @@ The Cowork SKILL.md is built from the repo skill, `skills/microsoft-build/SKILL.
 
 When you edit the repo skill, run `npm run smoke:m365`; CI runs it too. The result is about 28,000 characters (roughly 7,000 tokens), above the ~5,000 tokens Cowork recommends for a skill body but within what it accepts.
 
-To install, upload the zip (`appPackage.zip` from a local build, or `microsoft-build-m365.zip` from a release) in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**), or sideload it with `atk install --file-path <zip> --scope Personal`. Plugin skills appear only in new conversations.
+To install, upload the zip (`appPackage.zip` from a local build, or `microsoft-events-m365.zip` from a release) in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**), or sideload it with `atk install --file-path <zip> --scope Personal`. Plugin skills appear only in new conversations.
 
 The snapshot doesn't update itself. Install a newer release, or rebuild with a higher `--plugin-version` and reinstall, to pick up catalog changes. `npm run smoke:m365` builds from a fixture offline, makes the data read-only, and checks that the bundle's output matches `msevents`. With `-- --package` (needs `atk`), it also builds the app package zip, unzips it, checks that its skill files match the plugin folder, and runs the same checks against the unzipped skill; CI runs it this way.
 
 ### Publishing the M365 plugin
 
-The [M365 plugin workflow](../.github/workflows/m365-plugin.yml) builds and publishes the plugin. Run **M365 plugin** from the **Actions** tab on `main` and enter a version. It runs `npm run build:m365 -- --package` with live catalog data, then creates a release tagged `m365-v<version>` with `microsoft-build-m365.zip` attached and marks it **Latest**, so [`releases/latest/download/microsoft-build-m365.zip`](https://github.com/microsoft/Build-CLI/releases/latest/download/microsoft-build-m365.zip) serves it.
+The [M365 plugin workflow](../.github/workflows/m365-plugin.yml) builds and publishes the plugin. Run **M365 plugin** from the **Actions** tab on `main` and enter a version. It runs `npm run build:m365 -- --package` with live catalog data, then creates a release tagged `m365-v<version>` with `microsoft-events-m365.zip` attached and marks it **Latest**, so [`releases/latest/download/microsoft-events-m365.zip`](https://github.com/microsoft/Build-CLI/releases/latest/download/microsoft-events-m365.zip) serves it.
 
 - **Version:** the M365 plugin is versioned separately from the plugin manifests, because a catalog refresh needs a new release even without code changes. Enter `x.y.z`, higher than the last `m365-v*` release; Cowork only updates an installed plugin to a higher version.
 - **Events:** leave the events field empty to bundle every supported event, or enter event IDs separated by spaces, such as `build-2026 ignite-2026`, to bundle only those. Use it when an event's catalog can't be downloaded, because the build fails if any requested event fails.

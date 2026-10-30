@@ -71,7 +71,7 @@ Session results are a starting point. For broad topics, ask the agent to refine 
 | VS Code | Open Extensions (Ctrl+Shift+X), search `@agentPlugins microsoft-events`, and install |
 | Visual Studio 2026 | Copy `skills/microsoft-events/` to a [supported skill location](https://learn.microsoft.com/visualstudio/ide/copilot-agent-skills) |
 | Claude Code | `/plugin marketplace add microsoft/Build-CLI` then `/plugin install microsoft-events@microsoft-events-marketplace` |
-| Microsoft 365 Copilot Cowork | Download [`microsoft-build-m365.zip`](https://github.com/microsoft/Build-CLI/releases/latest/download/microsoft-build-m365.zip) from the latest release and upload it in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**). To build your own offline plugin, see [cli/README.md](cli/README.md#microsoft-365-copilot-plugin-offline) |
+| Microsoft 365 Copilot Cowork | Download [`microsoft-events-m365.zip`](https://github.com/microsoft/Build-CLI/releases/latest/download/microsoft-events-m365.zip) from the latest release and upload it in Cowork (**Customize** → **Plugins** → **Add plugin** → **Only you**). To build your own offline plugin, see [cli/README.md](cli/README.md#microsoft-365-copilot-plugin-offline) |
 
 ## Scope and Limitations
 

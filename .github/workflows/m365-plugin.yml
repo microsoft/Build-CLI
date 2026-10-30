@@ -2,7 +2,7 @@ name: M365 plugin
 
 # Builds the offline Microsoft 365 Copilot plugin app package (for Cowork) with live catalog data
 # and publishes it as release m365-v<version>, marked Latest, so
-# releases/latest/download/microsoft-build-m365.zip serves it. The M365 plugin has its own
+# releases/latest/download/microsoft-events-m365.zip serves it. The M365 plugin has its own
 # version, separate from the plugin manifests, because catalog refreshes need new releases too.
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ concurrency:
 env:
   # Keep in sync with the atk install step in ci.yml.
   ATK_VERSION: 1.1.18
-  ZIP_NAME: microsoft-build-m365.zip
+  ZIP_NAME: microsoft-events-m365.zip
 
 jobs:
   build:
