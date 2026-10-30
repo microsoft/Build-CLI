@@ -123,3 +123,23 @@ describe('Ignite 2026 catalog', () => {
     expect(results.every((r) => r.session.event === 'ignite-2026')).toBe(true);
   });
 });
+
+describe('repeated session code within an event', () => {
+  beforeAll(() => {
+    const ignitePath = join(import.meta.dirname, 'fixtures', 'ignite-2026-sample.json');
+    const igniteRaw: RawSession[] = JSON.parse(readFileSync(ignitePath, 'utf-8'));
+    const laterSlot: RawSession = { ...igniteRaw[0]!, TimeSlot: '17:45 - 19:00' };
+    buildIndex(normalizeCatalog([...igniteRaw, laterSlot], 'ignite-2026'));
+  });
+
+  it('indexes without throwing and returns the session once from search', () => {
+    const results = searchSessions({ query: 'Salesforce migration', event: 'ignite-2026' });
+    expect(results.filter((r) => r.session.sessionCode === 'LAB700')).toHaveLength(1);
+  });
+
+  it('returns every time slot from findSession', () => {
+    const slots = findSession('LAB700', 'ignite-2026').map((s) => s.timeSlot);
+    expect(slots).toHaveLength(2);
+    expect(slots).toContain('17:45 - 19:00');
+  });
+});
