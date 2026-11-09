@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { CACHE_SCHEMA_VERSION } from '../dist/data/cache.js';
 import { normalizeCatalog } from '../dist/data/normalize.js';
 
 const execFileAsync = promisify(execFile);
@@ -40,6 +41,7 @@ try {
     sessionCount: sessions.length,
     lastCheckStatus: 'updated',
     consecutiveFailures: 0,
+    schemaVersion: CACHE_SCHEMA_VERSION,
   }, null, 2));
 
   await runCli(['--help'], cacheDir);
