@@ -493,25 +493,25 @@ describe('automatic cache revalidation', () => {
   });
 
   it('forces a full GET when cache schema is outdated', async () => {
-    await writeCachedEvent('build-2025', { schemaVersion: 1 });
-    await writeCachedEvent('ignite-2025');
-    await writeCachedEvent('build-2026');
+    await writeCachedEvent('build-2026', { schemaVersion: 1 });
+    await writeCachedEvent('ignite-2026');
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(
-      [{ sessionCode: 'BRK101', title: 'Build 2025 session' }],
-      { etag: '"2025-new"', 'last-modified': 'Thu, 07 May 2026 02:55:00 GMT' },
+      [{ sessionCode: 'BRK101', title: 'Build 2026 session' }],
+      { etag: '"2026-new"', 'last-modified': 'Thu, 07 May 2026 02:55:00 GMT' },
     ));
     vi.stubGlobal('fetch', fetchMock);
 
     await ensureCache();
 
-    // Should have fetched only build-2025 (outdated schema), not the others
+    // Should have fetched only build-2026 (outdated schema), not ignite-2026
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://aka.ms/build2026-session-info');
     // Should NOT send conditional headers (full GET, not revalidation)
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.headers).not.toHaveProperty('If-None-Match');
     expect(init.headers).not.toHaveProperty('If-Modified-Since');
 
-    const updatedMeta = await readMeta('build-2025');
+    const updatedMeta = await readMeta('build-2026');
     expect(updatedMeta?.schemaVersion).toBe(CACHE_SCHEMA_VERSION);
     expect(updatedMeta?.lastCheckStatus).toBe('updated');
   });
@@ -535,9 +535,8 @@ describe('automatic cache revalidation', () => {
   });
 
   it('skips fetch when cache schema version is current', async () => {
-    await writeCachedEvent('build-2025', { schemaVersion: CACHE_SCHEMA_VERSION });
-    await writeCachedEvent('ignite-2025', { schemaVersion: CACHE_SCHEMA_VERSION });
     await writeCachedEvent('build-2026', { schemaVersion: CACHE_SCHEMA_VERSION });
+    await writeCachedEvent('ignite-2026', { schemaVersion: CACHE_SCHEMA_VERSION });
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
